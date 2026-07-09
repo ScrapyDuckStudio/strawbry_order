@@ -1,0 +1,15 @@
+# Database (contains real order data and hashed passwords)
+strawberry.db
+
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+
+# VS Code
+.vscode/
+
+# Environment
+.env
+venv/
+.venv/
