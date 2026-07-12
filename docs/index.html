@@ -3,160 +3,224 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover"/>
-  <meta name="theme-color" content="#1a0005"/>
+  <meta name="theme-color" content="#0f0a1a"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="Strawberries"/>
-  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍓</text></svg>"/>
   <title>🍓 Strawberry Orders</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <script>
-  // Clean up old broken service workers
   if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(function(r){r.forEach(function(reg){reg.unregister()})});}
   if('caches' in window){caches.keys().then(function(n){n.forEach(function(name){caches.delete(name)})});}
   </script>
   <style>
-    *{box-sizing:border-box;margin:0;padding:0}
-    body{font-family:'Segoe UI',sans-serif;min-height:100vh;
-         background:linear-gradient(160deg,#1a0005 0%,#2d0010 35%,#1a0a00 70%,#0d0000 100%);
-         color:#f0d0d5;padding:1.5rem 1rem}
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f0a1a;
+  --surface:rgba(255,255,255,0.04);
+  --surface-hover:rgba(255,255,255,0.07);
+  --border:rgba(255,100,130,0.12);
+  --border-hover:rgba(255,100,130,0.3);
+  --accent:#ff6b8a;
+  --accent-glow:rgba(255,107,138,0.3);
+  --accent-dark:#c4345a;
+  --green:#4ade80;
+  --green-glow:rgba(74,222,128,0.2);
+  --text:#f8f0f2;
+  --text-dim:#a08090;
+  --text-muted:#6a5060;
+  --radius:16px;
+  --radius-lg:24px;
+}
+html{scroll-behavior:smooth}
+body{font-family:'Inter',system-ui,sans-serif;min-height:100vh;min-height:100dvh;
+  background:var(--bg);color:var(--text);padding:0;overflow-x:hidden;
+  background-image:radial-gradient(ellipse at 20% 0%,rgba(200,50,90,0.08) 0%,transparent 50%),
+                   radial-gradient(ellipse at 80% 100%,rgba(100,40,150,0.06) 0%,transparent 50%)}
+.container{max-width:480px;margin:0 auto;padding:1.5rem 1.2rem;padding-bottom:env(safe-area-inset-bottom)}
 
-    h1{text-align:center;font-size:1.8rem;color:#ff8fa3;margin-bottom:.3rem}
-    .subtitle{text-align:center;color:#704050;font-size:.9rem;margin-bottom:2rem}
+/* Typography */
+h1{font-size:2rem;font-weight:900;letter-spacing:-0.5px;background:linear-gradient(135deg,#ff6b8a,#ff9a6b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+h2{font-size:1.25rem;font-weight:700;color:var(--text)}
+.subtitle{color:var(--text-muted);font-size:.88rem;font-weight:400;margin-top:.3rem}
 
-    /* ── SCREEN SYSTEM ── */
-    .screen{display:none;max-width:560px;margin:0 auto}
-    .screen.active{display:block}
+/* Screen system */
+.screen{display:none;animation:fadeIn .3s ease}.screen.active{display:block}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
-    /* ── CARD ── */
-    .card{background:linear-gradient(135deg,rgba(139,26,42,.35),rgba(30,5,10,.95));
-          border:1px solid rgba(224,80,112,.25);border-radius:18px;
-          padding:1.6rem 1.8rem;margin-bottom:1rem;
-          box-shadow:0 6px 32px rgba(0,0,0,.6)}
-    .card h2{color:#ff8fa3;font-size:1.2rem;margin-bottom:1rem}
+/* Cards */
+.card{background:var(--surface);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem;margin-bottom:1rem;
+  transition:border-color .2s,box-shadow .2s}
+.card:hover{border-color:var(--border-hover);box-shadow:0 8px 40px rgba(0,0,0,.3)}
+.card h2{margin-bottom:1rem;font-size:1.1rem}
 
-    /* ── FORM ELEMENTS ── */
-    label{display:block;font-size:.85rem;color:#c08090;margin-bottom:.35rem}
-    input[type=password],select{width:100%;padding:.6rem .9rem;
-          background:rgba(255,100,120,.07);color:#f0d0d5;
-          border:1px solid rgba(255,100,120,.25);border-radius:10px;
-          font-size:1rem;outline:none;transition:border .2s}
-    input[type=password]:focus,select:focus{border-color:#e05070;
-          box-shadow:0 0 0 2px rgba(224,80,112,.2)}
-    select option{background:#2d0010;color:#f0d0d5}
+/* Forms */
+label{display:block;font-size:.8rem;font-weight:500;color:var(--text-dim);margin-bottom:.4rem;
+  letter-spacing:.3px;text-transform:uppercase}
+input[type=password],select{width:100%;padding:.75rem 1rem;background:rgba(255,255,255,0.06);
+  color:var(--text);border:1px solid var(--border);border-radius:12px;font-size:1rem;
+  font-family:inherit;outline:none;transition:all .2s}
+input[type=password]:focus,select:focus{border-color:var(--accent);
+  box-shadow:0 0 0 3px var(--accent-glow);background:rgba(255,255,255,0.08)}
+select{appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' fill='%23ff6b8a' viewBox='0 0 16 16'%3E%3Cpath d='M8 11L3 6h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 1rem center}
+select option{background:#1a1025;color:var(--text)}
 
-    /* ── BUTTONS ── */
-    .btn{width:100%;padding:.7rem;border:none;border-radius:12px;
-         font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:.5rem}
-    .btn-primary{background:linear-gradient(135deg,#8b1a2a,#c0392b,#e05070);color:#fff}
-    .btn-primary:hover{opacity:.85}
-    .btn-secondary{background:rgba(255,80,100,.08);
-                   border:1px solid rgba(255,100,120,.3);color:#d0a0a8}
-    .btn-secondary:hover{background:rgba(255,80,100,.15)}
-    .btn-green{background:linear-gradient(135deg,#145028,#27ae60);color:#fff}
+/* Buttons */
+.btn{width:100%;padding:.85rem;border:none;border-radius:14px;font-size:.95rem;font-weight:700;
+  cursor:pointer;transition:all .2s;margin-top:.6rem;font-family:inherit;letter-spacing:.2px;
+  position:relative;overflow:hidden}
+.btn:active{transform:scale(0.97)}
+.btn-primary{background:linear-gradient(135deg,var(--accent-dark),var(--accent));color:#fff;
+  box-shadow:0 4px 20px var(--accent-glow)}
+.btn-primary:hover{box-shadow:0 6px 30px rgba(255,107,138,0.4);transform:translateY(-1px)}
+.btn-secondary{background:var(--surface);border:1px solid var(--border);color:var(--text-dim)}
+.btn-secondary:hover{border-color:var(--border-hover);color:var(--text);background:var(--surface-hover)}
+.btn-green{background:linear-gradient(135deg,#166534,#22c55e);color:#fff;
+  box-shadow:0 4px 20px var(--green-glow)}
+.btn-green:hover{box-shadow:0 6px 30px rgba(74,222,128,0.35)}
 
-    /* ── TABS (login) ── */
-    .tabs{display:flex;gap:.5rem;margin-bottom:1.2rem}
-    .tab{flex:1;padding:.5rem;border:1px solid rgba(255,100,120,.3);border-radius:10px;
-         background:transparent;color:#c08090;cursor:pointer;font-size:.9rem;transition:all .2s}
-    .tab.active{background:linear-gradient(135deg,#8b1a2a,#c0392b);color:#fff;border-color:transparent}
+/* Tabs */
+.tabs{display:flex;gap:.4rem;margin-bottom:1.2rem;background:rgba(255,255,255,0.03);
+  border-radius:12px;padding:.3rem;border:1px solid var(--border)}
+.tab{flex:1;padding:.55rem .4rem;border:none;border-radius:10px;background:transparent;
+  color:var(--text-muted);cursor:pointer;font-size:.82rem;font-weight:600;
+  font-family:inherit;transition:all .25s}
+.tab.active{background:linear-gradient(135deg,var(--accent-dark),var(--accent));color:#fff;
+  box-shadow:0 2px 12px var(--accent-glow)}
+.tab:not(.active):hover{color:var(--text-dim);background:rgba(255,255,255,0.04)}
 
-    /* ── PRODUCT GRID (admin toggle) ── */
-    .product-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
-    .prod-toggle{display:flex;align-items:center;justify-content:space-between;
-                 background:rgba(255,100,120,.06);border:1px solid rgba(255,100,120,.15);
-                 border-radius:12px;padding:.75rem 1rem;cursor:pointer;transition:all .2s}
-    .prod-toggle.on{background:rgba(139,26,42,.4);border-color:rgba(224,80,112,.4)}
-    .prod-toggle .pname{font-size:.95rem;color:#d0a0a8}
-    .prod-toggle.on .pname{color:#ff8fa3;font-weight:600}
-    .prod-toggle .check{width:20px;height:20px;border-radius:50%;
-                        background:#3a1020;border:2px solid #8b1a2a;
-                        display:flex;align-items:center;justify-content:center;
-                        font-size:.75rem;transition:all .2s}
-    .prod-toggle.on .check{background:#e05070;border-color:#e05070;color:#fff}
+/* Product toggles */
+.product-grid{display:grid;grid-template-columns:1fr 1fr;gap:.6rem}
+.prod-toggle{display:flex;align-items:center;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--border);border-radius:14px;
+  padding:.8rem 1rem;cursor:pointer;transition:all .25s}
+.prod-toggle:hover{border-color:var(--border-hover)}
+.prod-toggle.on{background:rgba(255,107,138,0.08);border-color:rgba(255,107,138,0.3)}
+.prod-toggle .pname{font-size:.88rem;color:var(--text-dim);font-weight:500}
+.prod-toggle.on .pname{color:var(--accent);font-weight:600}
+.prod-toggle .check{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,0.05);
+  border:2px solid var(--border);display:flex;align-items:center;justify-content:center;
+  font-size:.7rem;transition:all .25s}
+.prod-toggle.on .check{background:var(--accent);border-color:var(--accent);color:#fff;
+  box-shadow:0 2px 10px var(--accent-glow)}
 
-    /* ── TIME SLOTS ── */
-    .time-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
-    .time-slot{padding:.6rem;border:1px solid rgba(255,100,120,.2);border-radius:10px;
-               background:rgba(255,100,120,.04);color:#c08090;text-align:center;
-               cursor:pointer;font-size:.9rem;transition:all .2s}
-    .time-slot:hover{border-color:rgba(224,80,112,.5);color:#f0d0d5}
-    .time-slot.selected{background:linear-gradient(135deg,#8b1a2a,#c0392b);
-                        border-color:#e05070;color:#fff;font-weight:600}
+/* Time slots */
+.time-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem}
+.time-slot{padding:.7rem;border:1px solid var(--border);border-radius:12px;
+  background:var(--surface);color:var(--text-muted);text-align:center;
+  cursor:pointer;font-size:.85rem;font-weight:500;transition:all .2s}
+.time-slot:hover{border-color:var(--border-hover);color:var(--text)}
+.time-slot.selected{background:linear-gradient(135deg,var(--accent-dark),var(--accent));
+  border-color:transparent;color:#fff;font-weight:600;box-shadow:0 2px 12px var(--accent-glow)}
 
-    /* ── ORDER ITEMS ── */
-    .order-item{display:flex;align-items:center;justify-content:space-between;
-                padding:.7rem 0;border-bottom:1px solid rgba(255,100,120,.1)}
-    .order-item:last-child{border-bottom:none}
-    .item-name{font-size:1rem;color:#d0a0a8}
-    .qty-ctrl{display:flex;align-items:center;gap:.6rem}
-    .qty-btn{width:30px;height:30px;border:none;border-radius:8px;
-             background:rgba(224,80,112,.15);color:#ff8fa3;font-size:1.1rem;
-             cursor:pointer;transition:background .2s}
-    .qty-btn:hover{background:rgba(224,80,112,.3)}
-    .qty-btn:disabled{opacity:.3;cursor:not-allowed}
-    .qty-val{font-size:1.1rem;font-weight:700;color:#ff8fa3;min-width:24px;text-align:center}
+/* Order items */
+.order-item{display:flex;align-items:center;justify-content:space-between;
+  padding:.8rem 0;border-bottom:1px solid rgba(255,255,255,0.04)}
+.order-item:last-child{border-bottom:none}
+.item-name{font-size:.95rem;color:var(--text);font-weight:500}
+.item-price{font-size:.78rem;color:var(--text-muted);margin-top:.1rem}
+.qty-ctrl{display:flex;align-items:center;gap:.7rem}
+.qty-btn{width:34px;height:34px;border:none;border-radius:10px;background:var(--surface);
+  border:1px solid var(--border);color:var(--accent);font-size:1.2rem;
+  cursor:pointer;transition:all .2s;display:flex;align-items:center;justify-content:center}
+.qty-btn:hover{background:var(--surface-hover);border-color:var(--border-hover)}
+.qty-btn:active{transform:scale(0.9)}
+.qty-btn:disabled{opacity:.25;cursor:not-allowed}
+.qty-val{font-size:1.15rem;font-weight:800;color:var(--accent);min-width:28px;text-align:center}
 
-    /* ── TOTAL / SUMMARY ── */
-    .total-bar{display:flex;justify-content:space-between;align-items:center;
-               padding:1rem 0 0 0;margin-top:.5rem;border-top:1px solid rgba(255,100,120,.15)}
-    .total-label{color:#c08090;font-size:1rem}
-    .total-val{font-size:1.4rem;font-weight:800;color:#ff8fa3}
+/* Totals */
+.total-bar{display:flex;justify-content:space-between;align-items:center;
+  padding:1rem 0 0;margin-top:.8rem;border-top:1px solid rgba(255,255,255,0.06)}
+.total-label{color:var(--text-dim);font-size:.9rem;font-weight:500}
+.total-val{font-size:1.5rem;font-weight:900;background:linear-gradient(135deg,#ff6b8a,#ff9a6b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
-    /* ── SUBMITTED CARD ── */
-    .submitted-card{background:linear-gradient(135deg,rgba(139,26,42,.35),rgba(30,5,10,.95));
-                    border:1px solid rgba(224,80,112,.3);border-left:5px solid #e05070;
-                    border-radius:18px;padding:1.5rem 1.8rem;margin-bottom:1rem}
-    .submitted-card h3{color:#ff8fa3;margin-bottom:.6rem}
-    .sline{font-size:.95rem;color:#d0a0a8;margin:.3rem 0}
-    .sline b{color:#f0d0d5}
-    .stotal{font-size:1.3rem;font-weight:800;color:#ff8fa3;margin-top:.8rem}
+/* Submitted card */
+.submitted-card{background:var(--surface);border:1px solid var(--border);
+  border-left:4px solid var(--accent);border-radius:var(--radius-lg);
+  padding:1.5rem;margin-bottom:1rem}
+.submitted-card h3{color:var(--green);font-size:1.1rem;font-weight:700;margin-bottom:.7rem}
+.sline{font-size:.9rem;color:var(--text-dim);margin:.35rem 0;line-height:1.4}
+.sline b{color:var(--text);font-weight:600}
+.stotal{font-size:1.3rem;font-weight:800;margin-top:.8rem;
+  background:linear-gradient(135deg,#ff6b8a,#ff9a6b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
-    /* ── ADMIN ORDER CARD ── */
-    .adm-card{background:linear-gradient(135deg,rgba(139,26,42,.35),rgba(30,5,10,.95));
-              border:1px solid rgba(224,80,112,.25);border-left:5px solid #e05070;
-              border-radius:18px;padding:1.4rem 1.6rem;margin-bottom:.8rem}
-    .adm-card.delivered{background:linear-gradient(135deg,rgba(20,80,40,.35),rgba(5,20,10,.95));
-                        border-color:rgba(46,204,113,.3);border-left-color:#27ae60}
-    .adm-card h3{font-size:1.15rem;color:#ff8fa3;margin-bottom:.4rem}
-    .adm-card.delivered h3{color:#2ecc71}
-    .badge{display:inline-block;background:linear-gradient(135deg,#145028,#27ae60);
-           color:#fff;font-size:.72rem;font-weight:700;letter-spacing:1.2px;
-           text-transform:uppercase;padding:.15rem .6rem;border-radius:20px;margin-bottom:.4rem}
-    .adm-card .sline{font-size:.9rem}
+/* Admin cards */
+.adm-card{background:var(--surface);border:1px solid var(--border);
+  border-left:4px solid var(--accent);border-radius:var(--radius);
+  padding:1.3rem 1.4rem;margin-bottom:.7rem;transition:all .2s}
+.adm-card:hover{border-color:var(--border-hover);box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.adm-card.delivered{border-left-color:var(--green);background:rgba(74,222,128,0.03)}
+.adm-card h3{font-size:1.05rem;color:var(--text);margin-bottom:.3rem;font-weight:700}
+.adm-card.delivered h3{color:var(--green)}
+.badge{display:inline-block;background:linear-gradient(135deg,#166534,#22c55e);
+  color:#fff;font-size:.68rem;font-weight:700;letter-spacing:1px;
+  text-transform:uppercase;padding:.2rem .65rem;border-radius:20px;margin-bottom:.4rem}
 
-    /* ── SUMMARY BOX ── */
-    .sum-box{background:linear-gradient(135deg,rgba(139,26,42,.3),rgba(10,2,5,.97));
-             border:1px solid rgba(224,80,112,.35);border-radius:18px;
-             padding:1.4rem 1.8rem;margin-top:1rem}
-    .sum-box h3{color:#ff8fa3;margin-bottom:.6rem}
-    .sum-big{font-size:1.8rem;font-weight:800;color:#ff8fa3}
+/* Summary box */
+.sum-box{background:linear-gradient(135deg,rgba(255,107,138,0.06),rgba(255,107,138,0.02));
+  border:1px solid rgba(255,107,138,0.2);border-radius:var(--radius-lg);
+  padding:1.4rem 1.6rem;margin-top:1rem}
+.sum-box h3{color:var(--text);font-size:1rem;margin-bottom:.5rem}
+.sum-big{font-size:2rem;font-weight:900;background:linear-gradient(135deg,#ff6b8a,#ff9a6b);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 
-    .err{color:#ff6b6b;font-size:.85rem;margin-top:.4rem;min-height:1.1em}
-    .info{color:#888;font-size:.85rem;text-align:center;padding:1rem 0;font-style:italic}
-    .logout-row{display:flex;justify-content:flex-end;margin-bottom:.5rem}
-    .logout-btn{background:transparent;border:1px solid rgba(255,100,120,.3);
-                color:#c08090;border-radius:8px;padding:.3rem .9rem;cursor:pointer;font-size:.85rem}
-    .logout-btn:hover{border-color:#e05070;color:#ff8fa3}
-    .divider{border:none;border-top:1px solid rgba(255,100,120,.12);margin:1rem 0}
+/* Utility */
+.err{color:#ff4d6a;font-size:.82rem;margin-top:.5rem;min-height:1.1em;font-weight:500}
+.info{color:var(--text-muted);font-size:.88rem;text-align:center;padding:2rem 0;font-style:normal}
+.logout-row{display:flex;justify-content:flex-end;margin-bottom:.8rem}
+.logout-btn{background:transparent;border:1px solid var(--border);color:var(--text-muted);
+  border-radius:10px;padding:.4rem 1rem;cursor:pointer;font-size:.82rem;font-weight:500;
+  font-family:inherit;transition:all .2s}
+.logout-btn:hover{border-color:var(--accent);color:var(--accent)}
+.divider{border:none;border-top:1px solid rgba(255,255,255,0.05);margin:1.2rem 0}
+.hero{text-align:center;padding:2.5rem 1rem 2rem}
+.hero-emoji{font-size:3.5rem;display:block;margin-bottom:.5rem;
+  filter:drop-shadow(0 4px 20px rgba(255,107,138,0.3));animation:float 3s ease-in-out infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--accent-dark);border-radius:4px}
+
+/* Mobile polish */
+@media(max-width:400px){
+  .container{padding:1rem .9rem}
+  h1{font-size:1.6rem}
+  .card{padding:1.2rem;border-radius:var(--radius)}
+  .time-grid{grid-template-columns:1fr 1fr}
+  .product-grid{grid-template-columns:1fr}
+}
   </style>
 </head>
 <body>
+<div class="container">
 
-<h1>🍓 Strawberry Orders</h1>
-<p class="subtitle">Apartment ordering system</p>
+<!-- Hero -->
+<div class="hero">
+  <span class="hero-emoji">🍓</span>
+  <h1>Strawberry Orders</h1>
+  <p class="subtitle">Fresh delivery for your apartment</p>
+</div>
 
 <!-- ══ LOGIN ══ -->
 <div class="screen active" id="screen-login">
   <div class="card">
     <div class="tabs">
-      <button class="tab active" onclick="setLoginTab('tenant')">I'm a Tenant</button>
+      <button class="tab active" onclick="setLoginTab('tenant')">Tenant</button>
       <button class="tab" onclick="setLoginTab('admin')">Admin</button>
-      <button class="tab" onclick="setLoginTab('superadmin')">Super Admin</button>
+      <button class="tab" onclick="setLoginTab('superadmin')">Super</button>
     </div>
 
     <div id="login-tenant">
-      <div style="margin-bottom:.9rem">
-        <label>Select your apartment</label>
+      <div style="margin-bottom:1rem">
+        <label>Your apartment</label>
         <select id="apt-select">
           <option value="A1">Apartment A1</option>
           <option value="B2">Apartment B2</option>
@@ -165,19 +229,19 @@
         </select>
       </div>
       <div>
-        <label>Your PIN</label>
-        <input type="password" id="tenant-pin" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')doLogin()"/>
+        <label>PIN code</label>
+        <input type="password" id="tenant-pin" placeholder="••••" onkeydown="if(event.key==='Enter')doLogin()"/>
       </div>
     </div>
 
     <div id="login-admin" style="display:none">
       <label>Admin password</label>
-      <input type="password" id="admin-pwd" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <input type="password" id="admin-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
 
     <div id="login-superadmin" style="display:none">
       <label>Super Admin password</label>
-      <input type="password" id="superadmin-pwd" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/>
+      <input type="password" id="superadmin-pwd" placeholder="••••••••" onkeydown="if(event.key==='Enter')doLogin()"/>
     </div>
 
     <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
@@ -187,9 +251,7 @@
 
 <!-- ══ TENANT ══ -->
 <div class="screen" id="screen-tenant">
-  <div class="logout-row">
-    <button class="logout-btn" onclick="logout()">Log out</button>
-  </div>
+  <div class="logout-row"><button class="logout-btn" onclick="logout()">Sign out</button></div>
   <div id="tenant-submitted-view" style="display:none">
     <div class="submitted-card" id="tenant-summary-card"></div>
     <button class="btn btn-secondary" onclick="editOrder()">✏️ Edit my order</button>
@@ -203,17 +265,14 @@
         <span class="total-val" id="tenant-total">0 NOK</span>
       </div>
     </div>
-
     <div class="card">
       <h2>🕐 Delivery time</h2>
       <div class="time-grid" id="time-grid"></div>
     </div>
-
     <div class="card">
-      <h2>💳 Payment method</h2>
-      <div style="display:flex;gap:.75rem;flex-wrap:wrap" id="payment-options"></div>
+      <h2>💳 Payment</h2>
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap" id="payment-options"></div>
     </div>
-
     <button class="btn btn-secondary" style="margin-bottom:.5rem" onclick="saveDraft()">💾 Save draft</button>
     <button class="btn btn-primary" onclick="submitOrder()">✅ Submit order</button>
     <p class="err" id="tenant-err"></p>
@@ -222,31 +281,19 @@
 
 <!-- ══ ADMIN ══ -->
 <div class="screen" id="screen-admin">
-  <div class="logout-row">
-    <button class="logout-btn" onclick="logout()">Log out</button>
+  <div class="logout-row"><button class="logout-btn" onclick="logout()">Sign out</button></div>
+  <h2 style="margin-bottom:1rem">📋 Today's Orders</h2>
+  <div class="tabs" style="margin-bottom:1.2rem">
+    <button class="tab active" id="adm-tab-active" onclick="admTab('active')">🚛 Active</button>
+    <button class="tab" id="adm-tab-delivered" onclick="admTab('delivered')">✅ Done</button>
+    <button class="tab" id="adm-tab-products" onclick="admTab('products')">🛒 Stock</button>
   </div>
-  <h2 style="color:#ff8fa3;margin-bottom:1rem">📋 Today's Orders</h2>
-
-  <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap">
-    <button class="tab active" id="adm-tab-active"    onclick="admTab('active')">🚛 To deliver</button>
-    <button class="tab"        id="adm-tab-delivered" onclick="admTab('delivered')">✅ Delivered</button>
-    <button class="tab"        id="adm-tab-products"  onclick="admTab('products')">🛒 Products</button>
-  </div>
-
-  <div id="adm-active-panel">
-    <div id="adm-active-list"></div>
-    <div id="adm-active-summary"></div>
-  </div>
-  <div id="adm-delivered-panel" style="display:none">
-    <div id="adm-delivered-list"></div>
-    <div id="adm-delivered-summary"></div>
-  </div>
+  <div id="adm-active-panel"><div id="adm-active-list"></div></div>
+  <div id="adm-delivered-panel" style="display:none"><div id="adm-delivered-list"></div></div>
   <div id="adm-products-panel" style="display:none">
     <div class="card">
-      <h2>Available products</h2>
-      <p style="color:#906070;font-size:.85rem;margin-bottom:1rem">
-        Toggle what tenants can order today.
-      </p>
+      <h2>Available today</h2>
+      <p style="color:var(--text-muted);font-size:.82rem;margin-bottom:1rem">Toggle what tenants can order.</p>
       <div class="product-grid" id="adm-product-grid"></div>
     </div>
   </div>
@@ -254,593 +301,123 @@
 
 <!-- ══ SUPER ADMIN ══ -->
 <div class="screen" id="screen-superadmin">
-  <div class="logout-row">
-    <button class="logout-btn" onclick="logout()">Log out</button>
+  <div class="logout-row"><button class="logout-btn" onclick="logout()">Sign out</button></div>
+  <h2 style="margin-bottom:1rem">⚙️ Super Admin</h2>
+  <div class="tabs" style="margin-bottom:1.2rem">
+    <button class="tab active" id="sa-tab-orders" onclick="saTab('orders')">📋 Orders</button>
+    <button class="tab" id="sa-tab-products" onclick="saTab('products')">🛒 Stock</button>
+    <button class="tab" id="sa-tab-passwords" onclick="saTab('passwords')">🔑 Passwords</button>
   </div>
-  <h2 style="color:#ff8fa3;margin-bottom:1rem">⚙️ Super Admin</h2>
-
-  <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap">
-    <button class="tab active" id="sa-tab-orders"   onclick="saTab('orders')">📋 Orders</button>
-    <button class="tab"        id="sa-tab-products" onclick="saTab('products')">🛒 Products</button>
-    <button class="tab"        id="sa-tab-passwords" onclick="saTab('passwords')">🔑 Passwords</button>
-  </div>
-
   <div id="sa-orders-panel">
     <div id="sa-orders-list"></div>
     <button class="btn btn-secondary" style="margin-top:1rem" onclick="resetAll()">🔄 Reset all orders</button>
   </div>
-
   <div id="sa-products-panel" style="display:none">
     <div class="card">
-      <h2>Available products</h2>
-      <p style="color:#906070;font-size:.85rem;margin-bottom:1rem">
-        Toggle which products tenants can order. Admin (old man) sees this list when placing orders.
-      </p>
+      <h2>Available today</h2>
+      <p style="color:var(--text-muted);font-size:.82rem;margin-bottom:1rem">Toggle products for tenants.</p>
       <div class="product-grid" id="sa-product-grid"></div>
     </div>
   </div>
-
   <div id="sa-passwords-panel" style="display:none">
     <div class="card">
       <h2>Change Passwords</h2>
-      <p style="color:#906070;font-size:.85rem;margin-bottom:1rem">Leave blank to keep current.</p>
+      <p style="color:var(--text-muted);font-size:.82rem;margin-bottom:1rem">Leave blank to keep current.</p>
       <div id="pwd-fields"></div>
-      <button class="btn btn-primary" onclick="savePasswords()">💾 Save passwords</button>
-      <p class="err" id="pwd-msg" style="color:#2ecc71"></p>
+      <button class="btn btn-primary" onclick="savePasswords()">💾 Save</button>
+      <p class="err" id="pwd-msg" style="color:var(--green)"></p>
     </div>
   </div>
 </div>
 
+</div><!-- /container -->
+
 <script>
-// ══════════════════════════════════════════════
-//  STATE  (localStorage backed)
-// ══════════════════════════════════════════════
-const LS = {
-  get: k => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } },
-  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
-};
+const LS={get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))};
+const APARTMENTS=['A1','B2','C3','D4'];
+const PRICE=60;
+const TIME_SLOTS=['ASAP','06:00 – 08:00','08:00 – 10:00','10:00 – 12:00','12:00 – 14:00','14:00 – 16:00','17:00 – 19:00'];
+const PAYMENT_METHODS=['Cash','Vipps','Card'];
+const ALL_PRODUCTS=[{id:'strawberries',label:'Strawberries 🍓'},{id:'apples',label:'Apples 🍎'},{id:'honey',label:'Honey 🍯'},{id:'juice',label:'Juice 🧃'}];
 
-const APARTMENTS = ['A1','B2','C3','D4'];
-const PRICE = 60;
+function getPasswords(){return LS.get('passwords')||{superadmin:'superadmin123',admin:'admin123',A1:'1111',B2:'2222',C3:'3333',D4:'4444'}}
+function getEnabledProducts(){return LS.get('enabled_products')||['strawberries']}
+function getOrders(){return LS.get('orders')||{}}
+function saveOrders(o){LS.set('orders',o)}
 
-const TIME_SLOTS = [
-  'ASAP',
-  '06:00 – 08:00',
-  '08:00 – 10:00',
-  '10:00 – 12:00',
-  '12:00 – 14:00',
-  '14:00 – 16:00',
-  '17:00 – 19:00',
-];
+let session=null;
+function showScreen(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+id).classList.add('active')}
+function logout(){session=null;showScreen('login');document.getElementById('login-err').textContent='';['tenant-pin','admin-pwd','superadmin-pwd'].forEach(id=>{const el=document.getElementById(id);if(el)el.value=''})}
 
-const PAYMENT_METHODS = ['Cash','Vipps','Card'];
+let loginTab='tenant';
+function setLoginTab(tab){loginTab=tab;['tenant','admin','superadmin'].forEach(t=>{document.getElementById('login-'+t).style.display=t===tab?'':'none'});document.querySelectorAll('#screen-login .tabs .tab').forEach((btn,i)=>{btn.classList.toggle('active',['tenant','admin','superadmin'][i]===tab)});document.getElementById('login-err').textContent=''}
 
-const ALL_PRODUCTS = [
-  { id:'strawberries', label:'Strawberries 🍓' },
-  { id:'apples',       label:'Apples 🍎' },
-  { id:'honey',        label:'Honey 🍯' },
-  { id:'juice',        label:'Juice 🧃' },
-];
-
-function getPasswords() {
-  return LS.get('passwords') || {
-    superadmin: 'superadmin123',
-    admin: 'admin123',
-    A1:'1111', B2:'2222', C3:'3333', D4:'4444'
-  };
-}
-
-function getEnabledProducts() {
-  const saved = LS.get('enabled_products');
-  if (saved) return saved;
-  return ['strawberries']; // default
-}
-
-function getOrders() {
-  return LS.get('orders') || {};
-}
-
-function saveOrders(orders) { LS.set('orders', orders); }
-
-// ══════════════════════════════════════════════
-//  SESSION
-// ══════════════════════════════════════════════
-let session = null; // {role, aptId?}
-
-function showScreen(id) {
-  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById('screen-' + id).classList.add('active');
-}
-
-function logout() {
-  session = null;
-  showScreen('login');
-  document.getElementById('login-err').textContent = '';
-  ['tenant-pin','admin-pwd','superadmin-pwd'].forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.value = '';
-  });
-}
-
-// ══════════════════════════════════════════════
-//  LOGIN
-// ══════════════════════════════════════════════
-let loginTab = 'tenant';
-
-function setLoginTab(tab) {
-  loginTab = tab;
-  ['tenant','admin','superadmin'].forEach(t => {
-    document.getElementById('login-' + t).style.display = t === tab ? '' : 'none';
-  });
-  document.querySelectorAll('.tabs .tab').forEach((btn, i) => {
-    btn.classList.toggle('active', ['tenant','admin','superadmin'][i] === tab);
-  });
-  document.getElementById('login-err').textContent = '';
-}
-
-function doLogin() {
-  const pwds = getPasswords();
-  const err  = document.getElementById('login-err');
-  err.textContent = '';
-
-  if (loginTab === 'superadmin') {
-    const pwd = document.getElementById('superadmin-pwd').value;
-    if (pwd === pwds.superadmin) {
-      session = { role: 'superadmin' };
-      showSuperAdmin();
-    } else { err.textContent = 'Wrong password.'; }
-
-  } else if (loginTab === 'admin') {
-    const pwd = document.getElementById('admin-pwd').value;
-    if (pwd === pwds.admin) {
-      session = { role: 'admin' };
-      showAdmin();
-    } else { err.textContent = 'Wrong password.'; }
-
-  } else {
-    const aptId = document.getElementById('apt-select').value;
-    const pwd   = document.getElementById('tenant-pin').value;
-    if (pwd === pwds[aptId]) {
-      session = { role: 'tenant', aptId };
-      showTenant();
-    } else { err.textContent = 'Wrong PIN.'; }
-  }
+function doLogin(){
+  const pwds=getPasswords(),err=document.getElementById('login-err');err.textContent='';
+  if(loginTab==='superadmin'){const p=document.getElementById('superadmin-pwd').value;if(p===pwds.superadmin){session={role:'superadmin'};showSuperAdmin()}else err.textContent='Wrong password.'}
+  else if(loginTab==='admin'){const p=document.getElementById('admin-pwd').value;if(p===pwds.admin){session={role:'admin'};showAdmin()}else err.textContent='Wrong password.'}
+  else{const a=document.getElementById('apt-select').value,p=document.getElementById('tenant-pin').value;if(p===pwds[a]){session={role:'tenant',aptId:a};showTenant()}else err.textContent='Wrong PIN.'}
 }
 </script>
 
 <script>
-// ══════════════════════════════════════════════
-//  TENANT
-// ══════════════════════════════════════════════
-let tenantQtys   = {};
-let selectedTime = '';
-let selectedPay  = '';
+let tenantQtys={},selectedTime='',selectedPay='';
+function showTenant(){showScreen('tenant');const a=session.aptId;document.getElementById('tenant-apt-title').textContent='🏠 Apartment '+a;const orders=getOrders(),order=orders[a];if(order&&order.submitted&&!order.delivered){document.getElementById('tenant-submitted-view').style.display='';document.getElementById('tenant-form-view').style.display='none';renderSubmittedCard(order);return}document.getElementById('tenant-submitted-view').style.display='none';document.getElementById('tenant-form-view').style.display='';const enabled=getEnabledProducts();tenantQtys={};enabled.forEach(pid=>{tenantQtys[pid]=(order&&order.items&&order.items[pid])||0});selectedTime=(order&&order.time)||'';selectedPay=(order&&order.payment)||'';renderTenantItems();renderTimeSlots();renderPaymentOptions();updateTotal()}
 
-function showTenant() {
-  showScreen('tenant');
-  const aptId = session.aptId;
-  document.getElementById('tenant-apt-title').textContent = '🏠 Apartment ' + aptId;
+function renderTenantItems(){const enabled=getEnabledProducts(),c=document.getElementById('tenant-items');c.innerHTML='';enabled.forEach(pid=>{const prod=ALL_PRODUCTS.find(p=>p.id===pid),qty=tenantQtys[pid]||0;c.innerHTML+=`<div class="order-item"><div><span class="item-name">${prod.label}</span><div class="item-price">${PRICE} NOK each</div></div><div class="qty-ctrl"><button class="qty-btn" onclick="changeQty('${pid}',-1)" id="minus-${pid}" ${qty<=0?'disabled':''}>−</button><span class="qty-val" id="qty-${pid}">${qty}</span><button class="qty-btn" onclick="changeQty('${pid}',1)">+</button></div></div>`})}
 
-  const orders = getOrders();
-  const order  = orders[aptId];
+function changeQty(pid,d){tenantQtys[pid]=Math.max(0,(tenantQtys[pid]||0)+d);document.getElementById('qty-'+pid).textContent=tenantQtys[pid];document.getElementById('minus-'+pid).disabled=tenantQtys[pid]<=0;updateTotal()}
+function updateTotal(){const t=Object.values(tenantQtys).reduce((s,q)=>s+q*PRICE,0);document.getElementById('tenant-total').textContent=t+' NOK'}
 
-  if (order && order.submitted && !order.delivered) {
-    document.getElementById('tenant-submitted-view').style.display = '';
-    document.getElementById('tenant-form-view').style.display = 'none';
-    renderSubmittedCard(order);
-    return;
-  }
+function renderTimeSlots(){const g=document.getElementById('time-grid');g.innerHTML='';TIME_SLOTS.forEach(s=>{g.innerHTML+=`<div class="time-slot ${s===selectedTime?'selected':''}" onclick="selectTime('${s}')">${s}</div>`})}
+function selectTime(s){selectedTime=s;renderTimeSlots()}
 
-  document.getElementById('tenant-submitted-view').style.display = 'none';
-  document.getElementById('tenant-form-view').style.display = '';
+function renderPaymentOptions(){const c=document.getElementById('payment-options');c.innerHTML='';PAYMENT_METHODS.forEach(m=>{c.innerHTML+=`<div class="time-slot ${m===selectedPay?'selected':''}" style="flex:1;min-width:80px" onclick="selectPay('${m}')">${m}</div>`})}
+function selectPay(m){selectedPay=m;renderPaymentOptions()}
 
-  // init quantities from draft or fresh
-  const enabled = getEnabledProducts();
-  tenantQtys = {};
-  enabled.forEach(pid => {
-    tenantQtys[pid] = (order && order.items && order.items[pid]) || 0;
-  });
-  selectedTime = (order && order.time) || '';
-  selectedPay  = (order && order.payment) || '';
+function renderSubmittedCard(order){const card=document.getElementById('tenant-summary-card');let lines='';if(order.items){Object.entries(order.items).forEach(([pid,qty])=>{if(qty>0){const prod=ALL_PRODUCTS.find(p=>p.id===pid);lines+=`<p class="sline">${prod?prod.label:pid}: <b>${qty} × ${PRICE} = ${qty*PRICE} NOK</b></p>`}})}card.innerHTML=`<h3>✅ Order submitted</h3><p class="sline" style="color:var(--text-muted);font-size:.8rem;margin-bottom:.5rem">Submitted: ${order.submittedAt||''}</p>${lines}<p class="sline">🕐 <b>${order.time||'—'}</b> · 💳 <b>${order.payment||'—'}</b></p><p class="stotal">${order.total||0} NOK</p>`}
 
-  renderTenantItems();
-  renderTimeSlots();
-  renderPaymentOptions();
-  updateTotal();
-}
+function saveDraft(){const err=document.getElementById('tenant-err');err.textContent='';const total=Object.values(tenantQtys).reduce((s,q)=>s+q*PRICE,0),orders=getOrders();orders[session.aptId]={items:{...tenantQtys},time:selectedTime,payment:selectedPay,total,submitted:false};saveOrders(orders);err.style.color='var(--green)';err.textContent='✓ Draft saved';setTimeout(()=>{err.textContent='';err.style.color=''},2000)}
 
-function renderTenantItems() {
-  const enabled = getEnabledProducts();
-  const container = document.getElementById('tenant-items');
-  container.innerHTML = '';
-  enabled.forEach(pid => {
-    const prod = ALL_PRODUCTS.find(p => p.id === pid);
-    const qty  = tenantQtys[pid] || 0;
-    container.innerHTML += `
-      <div class="order-item">
-        <span class="item-name">${prod.label}<br>
-          <span style="font-size:.8rem;color:#704050">${PRICE} NOK each</span>
-        </span>
-        <div class="qty-ctrl">
-          <button class="qty-btn" onclick="changeQty('${pid}',-1)" id="minus-${pid}"
-            ${qty<=0?'disabled':''}>−</button>
-          <span class="qty-val" id="qty-${pid}">${qty}</span>
-          <button class="qty-btn" onclick="changeQty('${pid}',1)">+</button>
-        </div>
-      </div>`;
-  });
-}
+function submitOrder(){const err=document.getElementById('tenant-err');err.textContent='';const total=Object.values(tenantQtys).reduce((s,q)=>s+q*PRICE,0);if(total===0){err.textContent='Add at least one item.';return}if(!selectedTime){err.textContent='Select a delivery time.';return}if(!selectedPay){err.textContent='Select a payment method.';return}const orders=getOrders(),now=new Date().toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'});orders[session.aptId]={aptId:session.aptId,items:{...tenantQtys},time:selectedTime,payment:selectedPay,total,submitted:true,submittedAt:now,delivered:false};saveOrders(orders);document.getElementById('tenant-submitted-view').style.display='';document.getElementById('tenant-form-view').style.display='none';renderSubmittedCard(orders[session.aptId])}
 
-function changeQty(pid, delta) {
-  tenantQtys[pid] = Math.max(0, (tenantQtys[pid]||0) + delta);
-  document.getElementById('qty-' + pid).textContent = tenantQtys[pid];
-  document.getElementById('minus-' + pid).disabled = tenantQtys[pid] <= 0;
-  updateTotal();
-}
-
-function updateTotal() {
-  const total = Object.values(tenantQtys).reduce((s,q) => s + q * PRICE, 0);
-  document.getElementById('tenant-total').textContent = total + ' NOK';
-}
-
-function renderTimeSlots() {
-  const grid = document.getElementById('time-grid');
-  grid.innerHTML = '';
-  TIME_SLOTS.forEach(slot => {
-    const sel = slot === selectedTime ? 'selected' : '';
-    grid.innerHTML += `<div class="time-slot ${sel}" onclick="selectTime('${slot}')">${slot}</div>`;
-  });
-}
-
-function selectTime(slot) {
-  selectedTime = slot;
-  renderTimeSlots();
-}
-
-function renderPaymentOptions() {
-  const container = document.getElementById('payment-options');
-  container.innerHTML = '';
-  PAYMENT_METHODS.forEach(m => {
-    const sel = m === selectedPay ? 'selected' : '';
-    container.innerHTML += `
-      <div class="time-slot ${sel}" style="flex:1;min-width:80px"
-           onclick="selectPay('${m}')">${m}</div>`;
-  });
-}
-
-function selectPay(m) {
-  selectedPay = m;
-  renderPaymentOptions();
-}
-
-function renderSubmittedCard(order) {
-  const card = document.getElementById('tenant-summary-card');
-  let lines = '';
-  if (order.items) {
-    Object.entries(order.items).forEach(([pid, qty]) => {
-      if (qty > 0) {
-        const prod = ALL_PRODUCTS.find(p => p.id === pid);
-        lines += `<p class="sline">${prod ? prod.label : pid}: <b>${qty} × ${PRICE} NOK = ${qty*PRICE} NOK</b></p>`;
-      }
-    });
-  }
-  card.innerHTML = `
-    <h3>✅ Order submitted</h3>
-    <p class="sline" style="color:#704050;font-size:.82rem;margin-bottom:.6rem">
-      Submitted: ${order.submittedAt || ''}</p>
-    ${lines}
-    <p class="sline">🕐 Delivery: <b>${order.time || '—'}</b></p>
-    <p class="sline">💳 Payment: <b>${order.payment || '—'}</b></p>
-    <p class="stotal">Total: ${order.total || 0} NOK</p>`;
-}
-
-function saveDraft() {
-  const err = document.getElementById('tenant-err');
-  err.textContent = '';
-  const total = Object.values(tenantQtys).reduce((s,q) => s + q * PRICE, 0);
-  const orders = getOrders();
-  orders[session.aptId] = {
-    items: { ...tenantQtys }, time: selectedTime,
-    payment: selectedPay, total, submitted: false
-  };
-  saveOrders(orders);
-  err.style.color = '#2ecc71';
-  err.textContent = 'Draft saved!';
-  setTimeout(() => { err.textContent = ''; err.style.color = '#ff6b6b'; }, 2000);
-}
-
-function submitOrder() {
-  const err = document.getElementById('tenant-err');
-  err.textContent = '';
-  const total = Object.values(tenantQtys).reduce((s,q) => s + q * PRICE, 0);
-  if (total === 0) { err.textContent = 'Add at least one item.'; return; }
-  if (!selectedTime) { err.textContent = 'Please select a delivery time.'; return; }
-  if (!selectedPay)  { err.textContent = 'Please select a payment method.'; return; }
-  const orders = getOrders();
-  const now    = new Date().toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
-  orders[session.aptId] = {
-    aptId: session.aptId, items: { ...tenantQtys },
-    time: selectedTime, payment: selectedPay, total,
-    submitted: true, submittedAt: now, delivered: false
-  };
-  saveOrders(orders);
-  document.getElementById('tenant-submitted-view').style.display = '';
-  document.getElementById('tenant-form-view').style.display = 'none';
-  renderSubmittedCard(orders[session.aptId]);
-}
-
-function editOrder() {
-  const orders = getOrders();
-  if (orders[session.aptId]) orders[session.aptId].submitted = false;
-  saveOrders(orders);
-  showTenant();
-}
+function editOrder(){const orders=getOrders();if(orders[session.aptId])orders[session.aptId].submitted=false;saveOrders(orders);showTenant()}
 </script>
 
 <script>
-// ══════════════════════════════════════════════
-//  ADMIN (read + mark delivered)
-// ══════════════════════════════════════════════
-let admCurrentTab = 'active';
+let admCurrentTab='active';
+function showAdmin(){showScreen('admin');renderAdminOrders()}
+function admTab(tab){admCurrentTab=tab;document.getElementById('adm-active-panel').style.display=tab==='active'?'':'none';document.getElementById('adm-delivered-panel').style.display=tab==='delivered'?'':'none';document.getElementById('adm-products-panel').style.display=tab==='products'?'':'none';['active','delivered','products'].forEach(t=>{document.getElementById('adm-tab-'+t).classList.toggle('active',t===tab)});if(tab==='products')renderAdmProducts()}
 
-function showAdmin() {
-  showScreen('admin');
-  renderAdminOrders();
-}
+function renderAdminOrders(){const orders=getOrders();const submitted=APARTMENTS.map(id=>orders[id]).filter(o=>o&&o.submitted&&!o.delivered);const delivered=APARTMENTS.map(id=>orders[id]).filter(o=>o&&o.delivered);const drafts=APARTMENTS.map(id=>orders[id]).filter(o=>o&&!o.submitted);let activeHTML='';if(submitted.length===0&&drafts.length===0){activeHTML='<p class="info">No orders yet — waiting for tenants 🍓</p>'}else{submitted.forEach(o=>{activeHTML+=renderAdmCard(o,false)});drafts.forEach(o=>{activeHTML+=`<div class="adm-card" style="border-left-color:#f59e0b;opacity:.7"><h3>🏠 ${o.aptId} <span style="font-size:.75rem;color:#f59e0b">(draft)</span></h3><p class="sline">Not submitted yet</p></div>`});if(submitted.length>0){const tb=submitted.reduce((s,o)=>s+(o.total||0),0);activeHTML+=`<div class="sum-box"><h3>📦 To collect</h3><p class="sline"><b>${submitted.length}</b> order(s)</p><p class="sum-big">${tb} NOK</p></div>`}}document.getElementById('adm-active-list').innerHTML=activeHTML;let delHTML='';if(delivered.length===0){delHTML='<p class="info">No deliveries yet</p>'}else{delivered.forEach(o=>{delHTML+=renderAdmCard(o,true)});const tb=delivered.reduce((s,o)=>s+(o.total||0),0);delHTML+=`<div class="sum-box"><h3>✅ Delivered</h3><p class="sline"><b>${delivered.length}</b> order(s)</p><p class="sum-big">${tb} NOK</p></div>`}document.getElementById('adm-delivered-list').innerHTML=delHTML;document.querySelectorAll('[data-deliver]').forEach(btn=>{btn.addEventListener('click',()=>{markDelivered(btn.dataset.deliver)})})}
 
-function admTab(tab) {
-  admCurrentTab = tab;
-  document.getElementById('adm-active-panel').style.display    = tab === 'active'    ? '' : 'none';
-  document.getElementById('adm-delivered-panel').style.display = tab === 'delivered' ? '' : 'none';
-  document.getElementById('adm-products-panel').style.display  = tab === 'products'  ? '' : 'none';
-  ['active','delivered','products'].forEach(t => {
-    document.getElementById('adm-tab-' + t).classList.toggle('active', t === tab);
-  });
-  if (tab === 'products') renderAdmProducts();
-}
+function renderAdmCard(o,isDel){let lines='';if(o.items){Object.entries(o.items).forEach(([pid,qty])=>{if(qty>0){const prod=ALL_PRODUCTS.find(p=>p.id===pid);lines+=`<p class="sline">${prod?prod.label:pid}: <b>${qty} × ${PRICE} = ${qty*PRICE} NOK</b></p>`}})}const badge=isDel?'<span class="badge">✓ Delivered</span><br>':'';const delT=isDel&&o.deliveredAt?`<p class="sline" style="color:var(--green);font-size:.78rem">Delivered: ${o.deliveredAt}</p>`:'';const subT=o.submittedAt?`<p class="sline" style="color:var(--text-muted);font-size:.78rem">Submitted: ${o.submittedAt}</p>`:'';const btn=!isDel?`<button class="btn btn-green" style="margin-top:.7rem" data-deliver="${o.aptId}">🚚 Delivered — ${o.aptId}</button>`:'';return`<div class="adm-card ${isDel?'delivered':''}"><h3>🏠 Apartment ${o.aptId}</h3>${subT}${badge}${delT}${lines}<p class="sline">🕐 <b>${o.time||'—'}</b> · 💳 <b>${o.payment||'—'}</b></p><p class="stotal">${o.total||0} NOK</p>${btn}</div>`}
 
-function renderAdminOrders() {
-  const orders  = getOrders();
-  const submitted  = APARTMENTS.map(id => orders[id]).filter(o => o && o.submitted && !o.delivered);
-  const delivered  = APARTMENTS.map(id => orders[id]).filter(o => o && o.delivered);
-  const drafts     = APARTMENTS.map(id => orders[id]).filter(o => o && !o.submitted);
+function markDelivered(aptId){const orders=getOrders();if(!orders[aptId])return;orders[aptId].delivered=true;orders[aptId].deliveredAt=new Date().toLocaleTimeString('no-NO',{hour:'2-digit',minute:'2-digit'});saveOrders(orders);renderAdminOrders();admTab('delivered')}
 
-  // Active tab
-  let activeHTML = '';
-  if (submitted.length === 0 && drafts.length === 0) {
-    activeHTML = '<p class="info">No orders yet</p>';
-  } else {
-    submitted.forEach(o => { activeHTML += renderAdmCard(o, false); });
-    drafts.forEach(o => {
-      activeHTML += `<div class="adm-card" style="border-left-color:#f39c12;opacity:.7">
-        <h3>🏠 Apartment ${o.aptId} <span style="font-size:.8rem;color:#f39c12">(draft)</span></h3>
-        <p class="sline" style="color:#704050">Not submitted yet</p></div>`;
-    });
-    if (submitted.length > 0) {
-      const tb = submitted.reduce((s,o) => s + (o.total||0), 0);
-      activeHTML += `<div class="sum-box"><h3>📦 To collect</h3>
-        <p class="sline">Orders: <b>${submitted.length}</b></p>
-        <p class="sum-big">${tb} NOK</p></div>`;
-    }
-  }
-  document.getElementById('adm-active-list').innerHTML = activeHTML;
-
-  // Delivered tab
-  let delHTML = '';
-  if (delivered.length === 0) {
-    delHTML = '<p class="info">No deliveries yet</p>';
-  } else {
-    delivered.forEach(o => { delHTML += renderAdmCard(o, true); });
-    const tb = delivered.reduce((s,o) => s + (o.total||0), 0);
-    delHTML += `<div class="sum-box"><h3>✅ Delivered today</h3>
-      <p class="sline">Orders: <b>${delivered.length}</b></p>
-      <p class="sum-big">${tb} NOK</p></div>`;
-  }
-  document.getElementById('adm-delivered-list').innerHTML = delHTML;
-
-  // Rebind buttons
-  document.querySelectorAll('[data-deliver]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      markDelivered(btn.dataset.deliver);
-    });
-  });
-}
-
-function renderAdmCard(o, isDelivered) {
-  let lines = '';
-  if (o.items) {
-    Object.entries(o.items).forEach(([pid, qty]) => {
-      if (qty > 0) {
-        const prod = ALL_PRODUCTS.find(p => p.id === pid);
-        lines += `<p class="sline">${prod ? prod.label : pid}: <b>${qty} × ${PRICE} = ${qty*PRICE} NOK</b></p>`;
-      }
-    });
-  }
-  const badge    = isDelivered ? '<span class="badge">✓ Delivered</span><br>' : '';
-  const delTime  = isDelivered && o.deliveredAt ? `<p class="sline" style="color:#2ecc71;font-size:.8rem">Delivered: ${o.deliveredAt}</p>` : '';
-  const subTime  = o.submittedAt ? `<p class="sline" style="color:#704050;font-size:.8rem">Submitted: ${o.submittedAt}</p>` : '';
-  const btn      = !isDelivered
-    ? `<button class="btn btn-green" style="margin-top:.8rem" data-deliver="${o.aptId}">
-         🚚 Mark as delivered — ${o.aptId}</button>`
-    : '';
-  return `<div class="adm-card ${isDelivered ? 'delivered' : ''}">
-    <h3>🏠 Apartment ${o.aptId}</h3>
-    ${subTime}${badge}${delTime}${lines}
-    <p class="sline">🕐 <b>${o.time || '—'}</b></p>
-    <p class="sline">💳 <b>${o.payment || '—'}</b></p>
-    <p class="stotal">${o.total || 0} NOK</p>
-    ${btn}
-  </div>`;
-}
-
-function markDelivered(aptId) {
-  const orders = getOrders();
-  if (!orders[aptId]) return;
-  const now = new Date().toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
-  orders[aptId].delivered   = true;
-  orders[aptId].deliveredAt = now;
-  saveOrders(orders);
-  renderAdminOrders();
-  admTab('delivered');
-}
-
-function renderAdmProducts() {
-  const enabled = getEnabledProducts();
-  const grid    = document.getElementById('adm-product-grid');
-  grid.innerHTML = '';
-  ALL_PRODUCTS.forEach(prod => {
-    const on = enabled.includes(prod.id);
-    grid.innerHTML += `
-      <div class="prod-toggle ${on ? 'on' : ''}" id="adm-ptog-${prod.id}"
-           onclick="admToggleProduct('${prod.id}')">
-        <span class="pname">${prod.label}</span>
-        <span class="check">${on ? '✓' : ''}</span>
-      </div>`;
-  });
-}
-
-function admToggleProduct(pid) {
-  let enabled = getEnabledProducts();
-  if (enabled.includes(pid)) {
-    enabled = enabled.filter(p => p !== pid);
-  } else {
-    enabled.push(pid);
-  }
-  LS.set('enabled_products', enabled);
-  renderAdmProducts();
-  // also refresh superadmin grid if open
-  const saGrid = document.getElementById('sa-product-grid');
-  if (saGrid && saGrid.innerHTML) renderSaProducts();
-}
+function renderAdmProducts(){const enabled=getEnabledProducts(),grid=document.getElementById('adm-product-grid');grid.innerHTML='';ALL_PRODUCTS.forEach(prod=>{const on=enabled.includes(prod.id);grid.innerHTML+=`<div class="prod-toggle ${on?'on':''}" onclick="admToggleProduct('${prod.id}')"><span class="pname">${prod.label}</span><span class="check">${on?'✓':''}</span></div>`})}
+function admToggleProduct(pid){let enabled=getEnabledProducts();if(enabled.includes(pid))enabled=enabled.filter(p=>p!==pid);else enabled.push(pid);LS.set('enabled_products',enabled);renderAdmProducts();const sg=document.getElementById('sa-product-grid');if(sg&&sg.innerHTML)renderSaProducts()}
 </script>
 
 <script>
-// ══════════════════════════════════════════════
-//  SUPER ADMIN
-// ══════════════════════════════════════════════
-let saCurrentTab = 'orders';
+let saCurrentTab='orders';
+function showSuperAdmin(){showScreen('superadmin');saTab('orders')}
+function saTab(tab){saCurrentTab=tab;['orders','products','passwords'].forEach(t=>{document.getElementById('sa-'+t+'-panel').style.display=t===tab?'':'none';document.getElementById('sa-tab-'+t).classList.toggle('active',t===tab)});if(tab==='orders')renderSaOrders();if(tab==='products')renderSaProducts();if(tab==='passwords')renderPwdFields()}
 
-function showSuperAdmin() {
-  showScreen('superadmin');
-  saTab('orders');
-}
+function renderSaOrders(){const orders=getOrders();let html='';APARTMENTS.forEach(id=>{const o=orders[id];if(o&&(o.submitted||o.delivered)){html+=renderAdmCard(o,!!o.delivered);html+=`<button class="btn btn-secondary" style="margin-bottom:.8rem" onclick="saResetOrder('${id}')">🗑️ Reset ${id}</button>`}});if(!html)html='<p class="info">No orders yet</p>';document.getElementById('sa-orders-list').innerHTML=html;document.querySelectorAll('[data-deliver]').forEach(btn=>{btn.addEventListener('click',()=>markDelivered(btn.dataset.deliver))})}
+function saResetOrder(a){const o=getOrders();delete o[a];saveOrders(o);renderSaOrders()}
+function resetAll(){if(!confirm('Reset ALL orders?'))return;saveOrders({});renderSaOrders()}
 
-function saTab(tab) {
-  saCurrentTab = tab;
-  ['orders','products','passwords'].forEach(t => {
-    document.getElementById('sa-' + t + '-panel').style.display = t === tab ? '' : 'none';
-    document.getElementById('sa-tab-' + t).classList.toggle('active', t === tab);
-  });
-  if (tab === 'orders')    renderSaOrders();
-  if (tab === 'products')  renderSaProducts();
-  if (tab === 'passwords') renderPwdFields();
-}
+function renderSaProducts(){const enabled=getEnabledProducts(),grid=document.getElementById('sa-product-grid');grid.innerHTML='';ALL_PRODUCTS.forEach(prod=>{const on=enabled.includes(prod.id);grid.innerHTML+=`<div class="prod-toggle ${on?'on':''}" onclick="toggleProduct('${prod.id}')"><span class="pname">${prod.label}</span><span class="check">${on?'✓':''}</span></div>`})}
+function toggleProduct(pid){let enabled=getEnabledProducts();if(enabled.includes(pid))enabled=enabled.filter(p=>p!==pid);else enabled.push(pid);LS.set('enabled_products',enabled);renderSaProducts()}
 
-function renderSaOrders() {
-  const orders = getOrders();
-  let html = '';
-  APARTMENTS.forEach(id => {
-    const o = orders[id];
-    if (o && (o.submitted || o.delivered)) {
-      html += renderAdmCard(o, !!o.delivered);
-      html += `<button class="btn btn-secondary" style="margin-bottom:.8rem"
-               onclick="saResetOrder('${id}')">🗑️ Reset ${id}</button>`;
-    }
-  });
-  if (!html) html = '<p class="info">No orders yet</p>';
-  document.getElementById('sa-orders-list').innerHTML = html;
+const PWD_ACCOUNTS=[{key:'superadmin',label:'Super Admin'},{key:'admin',label:'Admin'},{key:'A1',label:'Apt A1'},{key:'B2',label:'Apt B2'},{key:'C3',label:'Apt C3'},{key:'D4',label:'Apt D4'}];
+function renderPwdFields(){const c=document.getElementById('pwd-fields');c.innerHTML='';PWD_ACCOUNTS.forEach(acc=>{c.innerHTML+=`<div style="margin-bottom:.8rem"><label>${acc.label}</label><input type="password" id="pwd-${acc.key}" placeholder="New password"/></div>`})}
+function savePasswords(){const pwds=getPasswords();let changed=0;PWD_ACCOUNTS.forEach(acc=>{const v=document.getElementById('pwd-'+acc.key).value.trim();if(v){pwds[acc.key]=v;changed++}});LS.set('passwords',pwds);const msg=document.getElementById('pwd-msg');msg.textContent=changed?`✓ Updated ${changed} password(s)`:'Nothing changed.';setTimeout(()=>{msg.textContent=''},2500);renderPwdFields()}
 
-  // rebind deliver buttons
-  document.querySelectorAll('[data-deliver]').forEach(btn => {
-    btn.addEventListener('click', () => markDelivered(btn.dataset.deliver));
-  });
-}
-
-function saResetOrder(aptId) {
-  const orders = getOrders();
-  delete orders[aptId];
-  saveOrders(orders);
-  renderSaOrders();
-}
-
-function resetAll() {
-  if (!confirm('Reset ALL orders?')) return;
-  saveOrders({});
-  renderSaOrders();
-}
-
-// ── PRODUCTS ──
-function renderSaProducts() {
-  const enabled = getEnabledProducts();
-  const grid    = document.getElementById('sa-product-grid');
-  grid.innerHTML = '';
-  ALL_PRODUCTS.forEach(prod => {
-    const on = enabled.includes(prod.id);
-    grid.innerHTML += `
-      <div class="prod-toggle ${on ? 'on' : ''}" id="ptog-${prod.id}"
-           onclick="toggleProduct('${prod.id}')">
-        <span class="pname">${prod.label}</span>
-        <span class="check">${on ? '✓' : ''}</span>
-      </div>`;
-  });
-}
-
-function toggleProduct(pid) {
-  let enabled = getEnabledProducts();
-  if (enabled.includes(pid)) {
-    enabled = enabled.filter(p => p !== pid);
-  } else {
-    enabled.push(pid);
-  }
-  LS.set('enabled_products', enabled);
-  renderSaProducts();
-}
-
-// ── PASSWORDS ──
-const PWD_ACCOUNTS = [
-  { key:'superadmin', label:'Super Admin' },
-  { key:'admin',      label:'Admin (viewer)' },
-  { key:'A1',         label:'Apartment A1' },
-  { key:'B2',         label:'Apartment B2' },
-  { key:'C3',         label:'Apartment C3' },
-  { key:'D4',         label:'Apartment D4' },
-];
-
-function renderPwdFields() {
-  const container = document.getElementById('pwd-fields');
-  container.innerHTML = '';
-  PWD_ACCOUNTS.forEach(acc => {
-    container.innerHTML += `
-      <div style="margin-bottom:.8rem">
-        <label>${acc.label}</label>
-        <input type="password" id="pwd-${acc.key}" placeholder="New password (blank = keep current)"/>
-      </div>`;
-  });
-}
-
-function savePasswords() {
-  const pwds = getPasswords();
-  let changed = 0;
-  PWD_ACCOUNTS.forEach(acc => {
-    const val = document.getElementById('pwd-' + acc.key).value.trim();
-    if (val) { pwds[acc.key] = val; changed++; }
-  });
-  LS.set('passwords', pwds);
-  const msg = document.getElementById('pwd-msg');
-  msg.textContent = changed ? `✓ Updated ${changed} password(s).` : 'Nothing changed.';
-  setTimeout(() => { msg.textContent = ''; }, 2500);
-  renderPwdFields();
-}
-
-// ══════════════════════════════════════════════
-//  INIT
-// ══════════════════════════════════════════════
-// Pre-fill apt from URL ?apt=A1
-const urlApt = new URLSearchParams(location.search).get('apt');
-if (urlApt && APARTMENTS.includes(urlApt.toUpperCase())) {
-  setLoginTab('tenant');
-  document.getElementById('apt-select').value = urlApt.toUpperCase();
-}
+// Init — URL pre-fill
+const urlApt=new URLSearchParams(location.search).get('apt');
+if(urlApt&&APARTMENTS.includes(urlApt.toUpperCase())){setLoginTab('tenant');document.getElementById('apt-select').value=urlApt.toUpperCase()}
 </script>
 </body>
 </html>
