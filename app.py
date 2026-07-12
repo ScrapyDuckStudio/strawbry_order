@@ -67,11 +67,68 @@ if "user"         not in st.session_state: st.session_state.user = None
 if "confirm_del"  not in st.session_state: st.session_state.confirm_del = None
 if "known_orders" not in st.session_state: st.session_state.known_orders = set()
 
-# Notification JS
-st.components.v1.html("""<script>
-if("Notification" in window && Notification.permission==="default"){Notification.requestPermission()}
-window.notifyNewOrder=function(a,t){if("Notification" in window&&Notification.permission==="granted"){var n=new Notification("🍓 New order!",{body:"Apartment "+a+" — "+t+" NOK",tag:"order-"+a});n.onclick=function(){window.focus()}}};
-</script>""", height=0)
+# Notification JS + PWA Service Worker
+st.components.v1.html("""
+<link rel="manifest" href="/app/static/manifest.json">
+<meta name="theme-color" content="#e05070">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Strawberries">
+<script>
+// Register Service Worker for PWA + push
+if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('/app/static/sw.js',{scope:'/'})
+    .then(function(reg){console.log('SW registered',reg.scope)})
+    .catch(function(e){console.log('SW failed',e)});
+}
+
+// Request notification permission
+if("Notification" in window && Notification.permission==="default"){
+    Notification.requestPermission();
+}
+
+// Local notification function (used when page is open)
+window.notifyNewOrder=function(aptName,total){
+    if("Notification" in window && Notification.permission==="granted"){
+        navigator.serviceWorker.ready.then(function(reg){
+            reg.showNotification("🍓 New Order!",{
+                body:"Apartment "+aptName+" — "+total+" NOK",
+                tag:"order-"+aptName,
+                vibrate:[200,100,200],
+                requireInteraction:true
+            });
+        }).catch(function(){
+            // Fallback to regular notification
+            new Notification("🍓 New Order!",{
+                body:"Apartment "+aptName+" — "+total+" NOK",
+                tag:"order-"+aptName
+            });
+        });
+    }
+};
+
+// PWA install prompt
+let deferredPrompt;
+window.addEventListener('beforeinstallprompt',function(e){
+    e.preventDefault();
+    deferredPrompt=e;
+    // Show install banner after 3 seconds
+    setTimeout(function(){
+        if(deferredPrompt){
+            var bar=document.createElement('div');
+            bar.id='pwa-bar';
+            bar.style.cssText='position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:linear-gradient(135deg,#8b1a2a,#e05070);color:#fff;font-family:Inter,sans-serif;font-size:14px;display:flex;align-items:center;justify-content:space-between;z-index:99999;box-shadow:0 -4px 20px rgba(0,0,0,.5)';
+            bar.innerHTML='<span>📱 Install as app for notifications</span><button id="pwa-install" style="background:#fff;color:#8b1a2a;border:none;padding:6px 16px;border-radius:8px;font-weight:700;cursor:pointer">Install</button>';
+            document.body.appendChild(bar);
+            document.getElementById('pwa-install').addEventListener('click',function(){
+                deferredPrompt.prompt();
+                deferredPrompt.userChoice.then(function(){deferredPrompt=null;bar.remove()});
+            });
+        }
+    },3000);
+});
+</script>
+""", height=0)
 
 def logout():
     st.session_state.user = None
