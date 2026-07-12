@@ -65,89 +65,12 @@ button[kind="secondary"]{background:rgba(255,80,100,0.07) !important;border:1px 
 # ── session ───────────────────────────────────────────────────────────────────
 if "user"         not in st.session_state: st.session_state.user = None
 if "confirm_del"  not in st.session_state: st.session_state.confirm_del = None
-if "known_orders" not in st.session_state: st.session_state.known_orders = set()
-
-# Notification JS + PWA Service Worker
-st.components.v1.html("""
-<link rel="manifest" href="/app/static/manifest.json">
-<meta name="theme-color" content="#e05070">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Strawberries">
-<script>
-// Register Service Worker for PWA + push
-if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('/app/static/sw.js',{scope:'/'})
-    .then(function(reg){console.log('SW registered',reg.scope)})
-    .catch(function(e){console.log('SW failed',e)});
-}
-
-// Request notification permission
-if("Notification" in window && Notification.permission==="default"){
-    Notification.requestPermission();
-}
-
-// Local notification function (used when page is open)
-window.notifyNewOrder=function(aptName,total){
-    if("Notification" in window && Notification.permission==="granted"){
-        navigator.serviceWorker.ready.then(function(reg){
-            reg.showNotification("🍓 New Order!",{
-                body:"Apartment "+aptName+" — "+total+" NOK",
-                tag:"order-"+aptName,
-                vibrate:[200,100,200],
-                requireInteraction:true
-            });
-        }).catch(function(){
-            // Fallback to regular notification
-            new Notification("🍓 New Order!",{
-                body:"Apartment "+aptName+" — "+total+" NOK",
-                tag:"order-"+aptName
-            });
-        });
-    }
-};
-
-// PWA install prompt
-let deferredPrompt;
-window.addEventListener('beforeinstallprompt',function(e){
-    e.preventDefault();
-    deferredPrompt=e;
-    // Show install banner after 3 seconds
-    setTimeout(function(){
-        if(deferredPrompt){
-            var bar=document.createElement('div');
-            bar.id='pwa-bar';
-            bar.style.cssText='position:fixed;bottom:0;left:0;right:0;padding:12px 16px;background:linear-gradient(135deg,#8b1a2a,#e05070);color:#fff;font-family:Inter,sans-serif;font-size:14px;display:flex;align-items:center;justify-content:space-between;z-index:99999;box-shadow:0 -4px 20px rgba(0,0,0,.5)';
-            bar.innerHTML='<span>📱 Install as app for notifications</span><button id="pwa-install" style="background:#fff;color:#8b1a2a;border:none;padding:6px 16px;border-radius:8px;font-weight:700;cursor:pointer">Install</button>';
-            document.body.appendChild(bar);
-            document.getElementById('pwa-install').addEventListener('click',function(){
-                deferredPrompt.prompt();
-                deferredPrompt.userChoice.then(function(){deferredPrompt=null;bar.remove()});
-            });
-        }
-    },3000);
-});
-</script>
-""", height=0)
 
 def logout():
     st.session_state.user = None
     st.session_state.confirm_del = None
-    st.session_state.known_orders = set()
     st.query_params.clear()
     st.rerun()
-
-def check_and_notify(orders):
-    current = {o["apt_id"] for o in orders if o["submitted"]}
-    new = current - st.session_state.known_orders
-    for apt_id in new:
-        o = next(x for x in orders if x["apt_id"] == apt_id)
-        # Notify via local notification + post to PWA parent
-        st.components.v1.html(f'''<script>
-if(window.notifyNewOrder){{window.notifyNewOrder("{o["apt_name"]}","{o["total_nok"]:.0f}")}}
-if(window.parent && window.parent.postMessage){{window.parent.postMessage({{type:"new-order",apt:"{o["apt_name"]}",total:"{o["total_nok"]:.0f}"}},"*")}}
-</script>''', height=0)
-    st.session_state.known_orders = current
 
 def get_base_url():
     try: return st.context.url.split("?")[0].rstrip("/")
@@ -266,11 +189,11 @@ def show_admin(user):
     with c2:
         st.write("")
         if st.button("Log out", key="a_out"): logout()
-    tab_active, tab_delivered, tab_stock, tab_qr_adm, tab_install = st.tabs(["🚛 To deliver", "✅ Delivered", "🛒 Stock", "📱 QR Codes", "📲 Install App"])
+    tab_active, tab_delivered, tab_stock, tab_qr_adm = st.tabs(["🚛 To deliver", "✅ Delivered", "🛒 Stock", "� QR Codes"])
 
     @st.fragment(run_every=15)
     def orders_fragment():
-        orders = get_all_full_orders(); check_and_notify(orders)
+        orders = get_all_full_orders()
         submitted = [o for o in orders if o["submitted"]]
         active = [o for o in submitted if not o.get("delivered")]
         delivered = [o for o in submitted if o.get("delivered")]
@@ -326,27 +249,6 @@ def show_admin(user):
                 st.image(qr_bytes, caption=f"Apt {apt_name}", use_container_width=True)
                 st.download_button(f"⬇ {apt_name}", data=qr_bytes, file_name=f"qr_{apt_name}.png", mime="image/png", key=f"adm_dl_{apt_id}", use_container_width=True)
 
-    with tab_install:
-        st.subheader("📲 Install as Phone App")
-        st.markdown("""
-Get **push notifications** on your phone when new orders arrive — even when the browser is closed.
-
-**How to install:**
-
-1. Open this link on your phone:
-""")
-        pwa_url = "https://scrapyduckstudio.github.io/strawbry_order/"
-        st.code(pwa_url)
-        st.markdown(f"""
-2. **Android (Chrome):** Tap the install banner or menu → "Install app"
-3. **iPhone (Safari):** Tap Share ↗ → "Add to Home Screen"
-4. **Allow notifications** when prompted
-5. Done! You'll get a 🍓 notification whenever a new order comes in.
-""")
-        # QR code to the PWA page for easy scanning
-        pwa_qr = make_qr_bytes(pwa_url)
-        st.image(pwa_qr, caption="Scan to open install page", width=200)
-
 def render_product_toggles(available, prefix):
     cols = st.columns(2)
     for idx, (pid, info) in enumerate(ALL_PRODUCTS.items()):
@@ -366,7 +268,7 @@ def show_superadmin(user):
     with tab_orders:
         @st.fragment(run_every=15)
         def sa_frag():
-            orders = get_all_full_orders(); check_and_notify(orders)
+            orders = get_all_full_orders()
             submitted = [o for o in orders if o["submitted"]]
             active = [o for o in submitted if not o.get("delivered")]
             delivered = [o for o in submitted if o.get("delivered")]

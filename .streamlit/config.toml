@@ -6,4 +6,4 @@ secondaryBackgroundColor = "#2d0010"
 textColor = "#ffffff"
 
 [server]
-enableStaticServing = true
+enableStaticServing = false
