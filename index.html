@@ -1,0 +1,836 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🍓 Strawberry Orders</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'Segoe UI',sans-serif;min-height:100vh;
+         background:linear-gradient(160deg,#1a0005 0%,#2d0010 35%,#1a0a00 70%,#0d0000 100%);
+         color:#f0d0d5;padding:1.5rem 1rem}
+
+    h1{text-align:center;font-size:1.8rem;color:#ff8fa3;margin-bottom:.3rem}
+    .subtitle{text-align:center;color:#704050;font-size:.9rem;margin-bottom:2rem}
+
+    /* ── SCREEN SYSTEM ── */
+    .screen{display:none;max-width:560px;margin:0 auto}
+    .screen.active{display:block}
+
+    /* ── CARD ── */
+    .card{background:linear-gradient(135deg,rgba(139,26,42,.35),rgba(30,5,10,.95));
+          border:1px solid rgba(224,80,112,.25);border-radius:18px;
+          padding:1.6rem 1.8rem;margin-bottom:1rem;
+          box-shadow:0 6px 32px rgba(0,0,0,.6)}
+    .card h2{color:#ff8fa3;font-size:1.2rem;margin-bottom:1rem}
+
+    /* ── FORM ELEMENTS ── */
+    label{display:block;font-size:.85rem;color:#c08090;margin-bottom:.35rem}
+    input[type=password],select{width:100%;padding:.6rem .9rem;
+          background:rgba(255,100,120,.07);color:#f0d0d5;
+          border:1px solid rgba(255,100,120,.25);border-radius:10px;
+          font-size:1rem;outline:none;transition:border .2s}
+    input[type=password]:focus,select:focus{border-color:#e05070;
+          box-shadow:0 0 0 2px rgba(224,80,112,.2)}
+    select option{background:#2d0010;color:#f0d0d5}
+
+    /* ── BUTTONS ── */
+    .btn{width:100%;padding:.7rem;border:none;border-radius:12px;
+         font-size:1rem;font-weight:700;cursor:pointer;transition:opacity .2s;margin-top:.5rem}
+    .btn-primary{background:linear-gradient(135deg,#8b1a2a,#c0392b,#e05070);color:#fff}
+    .btn-primary:hover{opacity:.85}
+    .btn-secondary{background:rgba(255,80,100,.08);
+                   border:1px solid rgba(255,100,120,.3);color:#d0a0a8}
+    .btn-secondary:hover{background:rgba(255,80,100,.15)}
+    .btn-green{background:linear-gradient(135deg,#145028,#27ae60);color:#fff}
+
+    /* ── TABS (login) ── */
+    .tabs{display:flex;gap:.5rem;margin-bottom:1.2rem}
+    .tab{flex:1;padding:.5rem;border:1px solid rgba(255,100,120,.3);border-radius:10px;
+         background:transparent;color:#c08090;cursor:pointer;font-size:.9rem;transition:all .2s}
+    .tab.active{background:linear-gradient(135deg,#8b1a2a,#c0392b);color:#fff;border-color:transparent}
+
+    /* ── PRODUCT GRID (admin toggle) ── */
+    .product-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem}
+    .prod-toggle{display:flex;align-items:center;justify-content:space-between;
+                 background:rgba(255,100,120,.06);border:1px solid rgba(255,100,120,.15);
+                 border-radius:12px;padding:.75rem 1rem;cursor:pointer;transition:all .2s}
+    .prod-toggle.on{background:rgba(139,26,42,.4);border-color:rgba(224,80,112,.4)}
+    .prod-toggle .pname{font-size:.95rem;color:#d0a0a8}
+    .prod-toggle.on .pname{color:#ff8fa3;font-weight:600}
+    .prod-toggle .check{width:20px;height:20px;border-radius:50%;
+                        background:#3a1020;border:2px solid #8b1a2a;
+                        display:flex;align-items:center;justify-content:center;
+                        font-size:.75rem;transition:all .2s}
+    .prod-toggle.on .check{background:#e05070;border-color:#e05070;color:#fff}
+
+    /* ── TIME SLOTS ── */
+    .time-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.6rem}
+    .time-slot{padding:.6rem;border:1px solid rgba(255,100,120,.2);border-radius:10px;
+               background:rgba(255,100,120,.04);color:#c08090;text-align:center;
+               cursor:pointer;font-size:.9rem;transition:all .2s}
+    .time-slot:hover{border-color:rgba(224,80,112,.5);color:#f0d0d5}
+    .time-slot.selected{background:linear-gradient(135deg,#8b1a2a,#c0392b);
+                        border-color:#e05070;color:#fff;font-weight:600}
+
+    /* ── ORDER ITEMS ── */
+    .order-item{display:flex;align-items:center;justify-content:space-between;
+                padding:.7rem 0;border-bottom:1px solid rgba(255,100,120,.1)}
+    .order-item:last-child{border-bottom:none}
+    .item-name{font-size:1rem;color:#d0a0a8}
+    .qty-ctrl{display:flex;align-items:center;gap:.6rem}
+    .qty-btn{width:30px;height:30px;border:none;border-radius:8px;
+             background:rgba(224,80,112,.15);color:#ff8fa3;font-size:1.1rem;
+             cursor:pointer;transition:background .2s}
+    .qty-btn:hover{background:rgba(224,80,112,.3)}
+    .qty-btn:disabled{opacity:.3;cursor:not-allowed}
+    .qty-val{font-size:1.1rem;font-weight:700;color:#ff8fa3;min-width:24px;text-align:center}
+
+    /* ── TOTAL / SUMMARY ── */
+    .total-bar{display:flex;justify-content:space-between;align-items:center;
+               padding:1rem 0 0 0;margin-top:.5rem;border-top:1px solid rgba(255,100,120,.15)}
+    .total-label{color:#c08090;font-size:1rem}
+    .total-val{font-size:1.4rem;font-weight:800;color:#ff8fa3}
+
+    /* ── SUBMITTED CARD ── */
+    .submitted-card{background:linear-gradient(135deg,rgba(139,26,42,.35),rgba(30,5,10,.95));
+                    border:1px solid rgba(224,80,112,.3);border-left:5px solid #e05070;
+                    border-radius:18px;padding:1.5rem 1.8rem;margin-bottom:1rem}
+    .submitted-card h3{color:#ff8fa3;margin-bottom:.6rem}
+    .sline{font-size:.95rem;color:#d0a0a8;margin:.3rem 0}
+    .sline b{color:#f0d0d5}
+    .stotal{font-size:1.3rem;font-weight:800;color:#ff8fa3;margin-top:.8rem}
+
+    /* ── ADMIN ORDER CARD ── */
+    .adm-card{background:linear-gradient(135deg,rgba(139,26,42,.35),rgba(30,5,10,.95));
+              border:1px solid rgba(224,80,112,.25);border-left:5px solid #e05070;
+              border-radius:18px;padding:1.4rem 1.6rem;margin-bottom:.8rem}
+    .adm-card.delivered{background:linear-gradient(135deg,rgba(20,80,40,.35),rgba(5,20,10,.95));
+                        border-color:rgba(46,204,113,.3);border-left-color:#27ae60}
+    .adm-card h3{font-size:1.15rem;color:#ff8fa3;margin-bottom:.4rem}
+    .adm-card.delivered h3{color:#2ecc71}
+    .badge{display:inline-block;background:linear-gradient(135deg,#145028,#27ae60);
+           color:#fff;font-size:.72rem;font-weight:700;letter-spacing:1.2px;
+           text-transform:uppercase;padding:.15rem .6rem;border-radius:20px;margin-bottom:.4rem}
+    .adm-card .sline{font-size:.9rem}
+
+    /* ── SUMMARY BOX ── */
+    .sum-box{background:linear-gradient(135deg,rgba(139,26,42,.3),rgba(10,2,5,.97));
+             border:1px solid rgba(224,80,112,.35);border-radius:18px;
+             padding:1.4rem 1.8rem;margin-top:1rem}
+    .sum-box h3{color:#ff8fa3;margin-bottom:.6rem}
+    .sum-big{font-size:1.8rem;font-weight:800;color:#ff8fa3}
+
+    .err{color:#ff6b6b;font-size:.85rem;margin-top:.4rem;min-height:1.1em}
+    .info{color:#888;font-size:.85rem;text-align:center;padding:1rem 0;font-style:italic}
+    .logout-row{display:flex;justify-content:flex-end;margin-bottom:.5rem}
+    .logout-btn{background:transparent;border:1px solid rgba(255,100,120,.3);
+                color:#c08090;border-radius:8px;padding:.3rem .9rem;cursor:pointer;font-size:.85rem}
+    .logout-btn:hover{border-color:#e05070;color:#ff8fa3}
+    .divider{border:none;border-top:1px solid rgba(255,100,120,.12);margin:1rem 0}
+  </style>
+</head>
+<body>
+
+<h1>🍓 Strawberry Orders</h1>
+<p class="subtitle">Apartment ordering system</p>
+
+<!-- ══ LOGIN ══ -->
+<div class="screen active" id="screen-login">
+  <div class="card">
+    <div class="tabs">
+      <button class="tab active" onclick="setLoginTab('tenant')">I'm a Tenant</button>
+      <button class="tab" onclick="setLoginTab('admin')">Admin</button>
+      <button class="tab" onclick="setLoginTab('superadmin')">Super Admin</button>
+    </div>
+
+    <div id="login-tenant">
+      <div style="margin-bottom:.9rem">
+        <label>Select your apartment</label>
+        <select id="apt-select">
+          <option value="A1">Apartment A1</option>
+          <option value="B2">Apartment B2</option>
+          <option value="C3">Apartment C3</option>
+          <option value="D4">Apartment D4</option>
+        </select>
+      </div>
+      <div>
+        <label>Your PIN</label>
+        <input type="password" id="tenant-pin" placeholder="Enter PIN" onkeydown="if(event.key==='Enter')doLogin()"/>
+      </div>
+    </div>
+
+    <div id="login-admin" style="display:none">
+      <label>Admin password</label>
+      <input type="password" id="admin-pwd" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+
+    <div id="login-superadmin" style="display:none">
+      <label>Super Admin password</label>
+      <input type="password" id="superadmin-pwd" placeholder="Enter password" onkeydown="if(event.key==='Enter')doLogin()"/>
+    </div>
+
+    <button class="btn btn-primary" onclick="doLogin()">Sign In</button>
+    <p class="err" id="login-err"></p>
+  </div>
+</div>
+
+<!-- ══ TENANT ══ -->
+<div class="screen" id="screen-tenant">
+  <div class="logout-row">
+    <button class="logout-btn" onclick="logout()">Log out</button>
+  </div>
+  <div id="tenant-submitted-view" style="display:none">
+    <div class="submitted-card" id="tenant-summary-card"></div>
+    <button class="btn btn-secondary" onclick="editOrder()">✏️ Edit my order</button>
+  </div>
+  <div id="tenant-form-view">
+    <div class="card">
+      <h2 id="tenant-apt-title">🏠 Apartment</h2>
+      <div id="tenant-items"></div>
+      <div class="total-bar">
+        <span class="total-label">Total</span>
+        <span class="total-val" id="tenant-total">0 NOK</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>🕐 Delivery time</h2>
+      <div class="time-grid" id="time-grid"></div>
+    </div>
+
+    <div class="card">
+      <h2>💳 Payment method</h2>
+      <div style="display:flex;gap:.75rem;flex-wrap:wrap" id="payment-options"></div>
+    </div>
+
+    <button class="btn btn-secondary" style="margin-bottom:.5rem" onclick="saveDraft()">💾 Save draft</button>
+    <button class="btn btn-primary" onclick="submitOrder()">✅ Submit order</button>
+    <p class="err" id="tenant-err"></p>
+  </div>
+</div>
+
+<!-- ══ ADMIN ══ -->
+<div class="screen" id="screen-admin">
+  <div class="logout-row">
+    <button class="logout-btn" onclick="logout()">Log out</button>
+  </div>
+  <h2 style="color:#ff8fa3;margin-bottom:1rem">📋 Today's Orders</h2>
+
+  <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap">
+    <button class="tab active" id="adm-tab-active"    onclick="admTab('active')">🚛 To deliver</button>
+    <button class="tab"        id="adm-tab-delivered" onclick="admTab('delivered')">✅ Delivered</button>
+    <button class="tab"        id="adm-tab-products"  onclick="admTab('products')">🛒 Products</button>
+  </div>
+
+  <div id="adm-active-panel">
+    <div id="adm-active-list"></div>
+    <div id="adm-active-summary"></div>
+  </div>
+  <div id="adm-delivered-panel" style="display:none">
+    <div id="adm-delivered-list"></div>
+    <div id="adm-delivered-summary"></div>
+  </div>
+  <div id="adm-products-panel" style="display:none">
+    <div class="card">
+      <h2>Available products</h2>
+      <p style="color:#906070;font-size:.85rem;margin-bottom:1rem">
+        Toggle what tenants can order today.
+      </p>
+      <div class="product-grid" id="adm-product-grid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ SUPER ADMIN ══ -->
+<div class="screen" id="screen-superadmin">
+  <div class="logout-row">
+    <button class="logout-btn" onclick="logout()">Log out</button>
+  </div>
+  <h2 style="color:#ff8fa3;margin-bottom:1rem">⚙️ Super Admin</h2>
+
+  <div style="display:flex;gap:.5rem;margin-bottom:1.2rem;flex-wrap:wrap">
+    <button class="tab active" id="sa-tab-orders"   onclick="saTab('orders')">📋 Orders</button>
+    <button class="tab"        id="sa-tab-products" onclick="saTab('products')">🛒 Products</button>
+    <button class="tab"        id="sa-tab-passwords" onclick="saTab('passwords')">🔑 Passwords</button>
+  </div>
+
+  <div id="sa-orders-panel">
+    <div id="sa-orders-list"></div>
+    <button class="btn btn-secondary" style="margin-top:1rem" onclick="resetAll()">🔄 Reset all orders</button>
+  </div>
+
+  <div id="sa-products-panel" style="display:none">
+    <div class="card">
+      <h2>Available products</h2>
+      <p style="color:#906070;font-size:.85rem;margin-bottom:1rem">
+        Toggle which products tenants can order. Admin (old man) sees this list when placing orders.
+      </p>
+      <div class="product-grid" id="sa-product-grid"></div>
+    </div>
+  </div>
+
+  <div id="sa-passwords-panel" style="display:none">
+    <div class="card">
+      <h2>Change Passwords</h2>
+      <p style="color:#906070;font-size:.85rem;margin-bottom:1rem">Leave blank to keep current.</p>
+      <div id="pwd-fields"></div>
+      <button class="btn btn-primary" onclick="savePasswords()">💾 Save passwords</button>
+      <p class="err" id="pwd-msg" style="color:#2ecc71"></p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════
+//  STATE  (localStorage backed)
+// ══════════════════════════════════════════════
+const LS = {
+  get: k => { try { return JSON.parse(localStorage.getItem(k)) } catch { return null } },
+  set: (k,v) => localStorage.setItem(k, JSON.stringify(v)),
+};
+
+const APARTMENTS = ['A1','B2','C3','D4'];
+const PRICE = 60;
+
+const TIME_SLOTS = [
+  'ASAP',
+  '06:00 – 08:00',
+  '08:00 – 10:00',
+  '10:00 – 12:00',
+  '12:00 – 14:00',
+  '14:00 – 16:00',
+  '17:00 – 19:00',
+];
+
+const PAYMENT_METHODS = ['Cash','Vipps','Card'];
+
+const ALL_PRODUCTS = [
+  { id:'strawberries', label:'Strawberries 🍓' },
+  { id:'apples',       label:'Apples 🍎' },
+  { id:'honey',        label:'Honey 🍯' },
+  { id:'juice',        label:'Juice 🧃' },
+];
+
+function getPasswords() {
+  return LS.get('passwords') || {
+    superadmin: 'superadmin123',
+    admin: 'admin123',
+    A1:'1111', B2:'2222', C3:'3333', D4:'4444'
+  };
+}
+
+function getEnabledProducts() {
+  const saved = LS.get('enabled_products');
+  if (saved) return saved;
+  return ['strawberries']; // default
+}
+
+function getOrders() {
+  return LS.get('orders') || {};
+}
+
+function saveOrders(orders) { LS.set('orders', orders); }
+
+// ══════════════════════════════════════════════
+//  SESSION
+// ══════════════════════════════════════════════
+let session = null; // {role, aptId?}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-' + id).classList.add('active');
+}
+
+function logout() {
+  session = null;
+  showScreen('login');
+  document.getElementById('login-err').textContent = '';
+  ['tenant-pin','admin-pwd','superadmin-pwd'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+}
+
+// ══════════════════════════════════════════════
+//  LOGIN
+// ══════════════════════════════════════════════
+let loginTab = 'tenant';
+
+function setLoginTab(tab) {
+  loginTab = tab;
+  ['tenant','admin','superadmin'].forEach(t => {
+    document.getElementById('login-' + t).style.display = t === tab ? '' : 'none';
+  });
+  document.querySelectorAll('.tabs .tab').forEach((btn, i) => {
+    btn.classList.toggle('active', ['tenant','admin','superadmin'][i] === tab);
+  });
+  document.getElementById('login-err').textContent = '';
+}
+
+function doLogin() {
+  const pwds = getPasswords();
+  const err  = document.getElementById('login-err');
+  err.textContent = '';
+
+  if (loginTab === 'superadmin') {
+    const pwd = document.getElementById('superadmin-pwd').value;
+    if (pwd === pwds.superadmin) {
+      session = { role: 'superadmin' };
+      showSuperAdmin();
+    } else { err.textContent = 'Wrong password.'; }
+
+  } else if (loginTab === 'admin') {
+    const pwd = document.getElementById('admin-pwd').value;
+    if (pwd === pwds.admin) {
+      session = { role: 'admin' };
+      showAdmin();
+    } else { err.textContent = 'Wrong password.'; }
+
+  } else {
+    const aptId = document.getElementById('apt-select').value;
+    const pwd   = document.getElementById('tenant-pin').value;
+    if (pwd === pwds[aptId]) {
+      session = { role: 'tenant', aptId };
+      showTenant();
+    } else { err.textContent = 'Wrong PIN.'; }
+  }
+}
+</script>
+
+<script>
+// ══════════════════════════════════════════════
+//  TENANT
+// ══════════════════════════════════════════════
+let tenantQtys   = {};
+let selectedTime = '';
+let selectedPay  = '';
+
+function showTenant() {
+  showScreen('tenant');
+  const aptId = session.aptId;
+  document.getElementById('tenant-apt-title').textContent = '🏠 Apartment ' + aptId;
+
+  const orders = getOrders();
+  const order  = orders[aptId];
+
+  if (order && order.submitted && !order.delivered) {
+    document.getElementById('tenant-submitted-view').style.display = '';
+    document.getElementById('tenant-form-view').style.display = 'none';
+    renderSubmittedCard(order);
+    return;
+  }
+
+  document.getElementById('tenant-submitted-view').style.display = 'none';
+  document.getElementById('tenant-form-view').style.display = '';
+
+  // init quantities from draft or fresh
+  const enabled = getEnabledProducts();
+  tenantQtys = {};
+  enabled.forEach(pid => {
+    tenantQtys[pid] = (order && order.items && order.items[pid]) || 0;
+  });
+  selectedTime = (order && order.time) || '';
+  selectedPay  = (order && order.payment) || '';
+
+  renderTenantItems();
+  renderTimeSlots();
+  renderPaymentOptions();
+  updateTotal();
+}
+
+function renderTenantItems() {
+  const enabled = getEnabledProducts();
+  const container = document.getElementById('tenant-items');
+  container.innerHTML = '';
+  enabled.forEach(pid => {
+    const prod = ALL_PRODUCTS.find(p => p.id === pid);
+    const qty  = tenantQtys[pid] || 0;
+    container.innerHTML += `
+      <div class="order-item">
+        <span class="item-name">${prod.label}<br>
+          <span style="font-size:.8rem;color:#704050">${PRICE} NOK each</span>
+        </span>
+        <div class="qty-ctrl">
+          <button class="qty-btn" onclick="changeQty('${pid}',-1)" id="minus-${pid}"
+            ${qty<=0?'disabled':''}>−</button>
+          <span class="qty-val" id="qty-${pid}">${qty}</span>
+          <button class="qty-btn" onclick="changeQty('${pid}',1)">+</button>
+        </div>
+      </div>`;
+  });
+}
+
+function changeQty(pid, delta) {
+  tenantQtys[pid] = Math.max(0, (tenantQtys[pid]||0) + delta);
+  document.getElementById('qty-' + pid).textContent = tenantQtys[pid];
+  document.getElementById('minus-' + pid).disabled = tenantQtys[pid] <= 0;
+  updateTotal();
+}
+
+function updateTotal() {
+  const total = Object.values(tenantQtys).reduce((s,q) => s + q * PRICE, 0);
+  document.getElementById('tenant-total').textContent = total + ' NOK';
+}
+
+function renderTimeSlots() {
+  const grid = document.getElementById('time-grid');
+  grid.innerHTML = '';
+  TIME_SLOTS.forEach(slot => {
+    const sel = slot === selectedTime ? 'selected' : '';
+    grid.innerHTML += `<div class="time-slot ${sel}" onclick="selectTime('${slot}')">${slot}</div>`;
+  });
+}
+
+function selectTime(slot) {
+  selectedTime = slot;
+  renderTimeSlots();
+}
+
+function renderPaymentOptions() {
+  const container = document.getElementById('payment-options');
+  container.innerHTML = '';
+  PAYMENT_METHODS.forEach(m => {
+    const sel = m === selectedPay ? 'selected' : '';
+    container.innerHTML += `
+      <div class="time-slot ${sel}" style="flex:1;min-width:80px"
+           onclick="selectPay('${m}')">${m}</div>`;
+  });
+}
+
+function selectPay(m) {
+  selectedPay = m;
+  renderPaymentOptions();
+}
+
+function renderSubmittedCard(order) {
+  const card = document.getElementById('tenant-summary-card');
+  let lines = '';
+  if (order.items) {
+    Object.entries(order.items).forEach(([pid, qty]) => {
+      if (qty > 0) {
+        const prod = ALL_PRODUCTS.find(p => p.id === pid);
+        lines += `<p class="sline">${prod ? prod.label : pid}: <b>${qty} × ${PRICE} NOK = ${qty*PRICE} NOK</b></p>`;
+      }
+    });
+  }
+  card.innerHTML = `
+    <h3>✅ Order submitted</h3>
+    <p class="sline" style="color:#704050;font-size:.82rem;margin-bottom:.6rem">
+      Submitted: ${order.submittedAt || ''}</p>
+    ${lines}
+    <p class="sline">🕐 Delivery: <b>${order.time || '—'}</b></p>
+    <p class="sline">💳 Payment: <b>${order.payment || '—'}</b></p>
+    <p class="stotal">Total: ${order.total || 0} NOK</p>`;
+}
+
+function saveDraft() {
+  const err = document.getElementById('tenant-err');
+  err.textContent = '';
+  const total = Object.values(tenantQtys).reduce((s,q) => s + q * PRICE, 0);
+  const orders = getOrders();
+  orders[session.aptId] = {
+    items: { ...tenantQtys }, time: selectedTime,
+    payment: selectedPay, total, submitted: false
+  };
+  saveOrders(orders);
+  err.style.color = '#2ecc71';
+  err.textContent = 'Draft saved!';
+  setTimeout(() => { err.textContent = ''; err.style.color = '#ff6b6b'; }, 2000);
+}
+
+function submitOrder() {
+  const err = document.getElementById('tenant-err');
+  err.textContent = '';
+  const total = Object.values(tenantQtys).reduce((s,q) => s + q * PRICE, 0);
+  if (total === 0) { err.textContent = 'Add at least one item.'; return; }
+  if (!selectedTime) { err.textContent = 'Please select a delivery time.'; return; }
+  if (!selectedPay)  { err.textContent = 'Please select a payment method.'; return; }
+  const orders = getOrders();
+  const now    = new Date().toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+  orders[session.aptId] = {
+    aptId: session.aptId, items: { ...tenantQtys },
+    time: selectedTime, payment: selectedPay, total,
+    submitted: true, submittedAt: now, delivered: false
+  };
+  saveOrders(orders);
+  document.getElementById('tenant-submitted-view').style.display = '';
+  document.getElementById('tenant-form-view').style.display = 'none';
+  renderSubmittedCard(orders[session.aptId]);
+}
+
+function editOrder() {
+  const orders = getOrders();
+  if (orders[session.aptId]) orders[session.aptId].submitted = false;
+  saveOrders(orders);
+  showTenant();
+}
+</script>
+
+<script>
+// ══════════════════════════════════════════════
+//  ADMIN (read + mark delivered)
+// ══════════════════════════════════════════════
+let admCurrentTab = 'active';
+
+function showAdmin() {
+  showScreen('admin');
+  renderAdminOrders();
+}
+
+function admTab(tab) {
+  admCurrentTab = tab;
+  document.getElementById('adm-active-panel').style.display    = tab === 'active'    ? '' : 'none';
+  document.getElementById('adm-delivered-panel').style.display = tab === 'delivered' ? '' : 'none';
+  document.getElementById('adm-products-panel').style.display  = tab === 'products'  ? '' : 'none';
+  ['active','delivered','products'].forEach(t => {
+    document.getElementById('adm-tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'products') renderAdmProducts();
+}
+
+function renderAdminOrders() {
+  const orders  = getOrders();
+  const submitted  = APARTMENTS.map(id => orders[id]).filter(o => o && o.submitted && !o.delivered);
+  const delivered  = APARTMENTS.map(id => orders[id]).filter(o => o && o.delivered);
+  const drafts     = APARTMENTS.map(id => orders[id]).filter(o => o && !o.submitted);
+
+  // Active tab
+  let activeHTML = '';
+  if (submitted.length === 0 && drafts.length === 0) {
+    activeHTML = '<p class="info">No orders yet</p>';
+  } else {
+    submitted.forEach(o => { activeHTML += renderAdmCard(o, false); });
+    drafts.forEach(o => {
+      activeHTML += `<div class="adm-card" style="border-left-color:#f39c12;opacity:.7">
+        <h3>🏠 Apartment ${o.aptId} <span style="font-size:.8rem;color:#f39c12">(draft)</span></h3>
+        <p class="sline" style="color:#704050">Not submitted yet</p></div>`;
+    });
+    if (submitted.length > 0) {
+      const tb = submitted.reduce((s,o) => s + (o.total||0), 0);
+      activeHTML += `<div class="sum-box"><h3>📦 To collect</h3>
+        <p class="sline">Orders: <b>${submitted.length}</b></p>
+        <p class="sum-big">${tb} NOK</p></div>`;
+    }
+  }
+  document.getElementById('adm-active-list').innerHTML = activeHTML;
+
+  // Delivered tab
+  let delHTML = '';
+  if (delivered.length === 0) {
+    delHTML = '<p class="info">No deliveries yet</p>';
+  } else {
+    delivered.forEach(o => { delHTML += renderAdmCard(o, true); });
+    const tb = delivered.reduce((s,o) => s + (o.total||0), 0);
+    delHTML += `<div class="sum-box"><h3>✅ Delivered today</h3>
+      <p class="sline">Orders: <b>${delivered.length}</b></p>
+      <p class="sum-big">${tb} NOK</p></div>`;
+  }
+  document.getElementById('adm-delivered-list').innerHTML = delHTML;
+
+  // Rebind buttons
+  document.querySelectorAll('[data-deliver]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      markDelivered(btn.dataset.deliver);
+    });
+  });
+}
+
+function renderAdmCard(o, isDelivered) {
+  let lines = '';
+  if (o.items) {
+    Object.entries(o.items).forEach(([pid, qty]) => {
+      if (qty > 0) {
+        const prod = ALL_PRODUCTS.find(p => p.id === pid);
+        lines += `<p class="sline">${prod ? prod.label : pid}: <b>${qty} × ${PRICE} = ${qty*PRICE} NOK</b></p>`;
+      }
+    });
+  }
+  const badge    = isDelivered ? '<span class="badge">✓ Delivered</span><br>' : '';
+  const delTime  = isDelivered && o.deliveredAt ? `<p class="sline" style="color:#2ecc71;font-size:.8rem">Delivered: ${o.deliveredAt}</p>` : '';
+  const subTime  = o.submittedAt ? `<p class="sline" style="color:#704050;font-size:.8rem">Submitted: ${o.submittedAt}</p>` : '';
+  const btn      = !isDelivered
+    ? `<button class="btn btn-green" style="margin-top:.8rem" data-deliver="${o.aptId}">
+         🚚 Mark as delivered — ${o.aptId}</button>`
+    : '';
+  return `<div class="adm-card ${isDelivered ? 'delivered' : ''}">
+    <h3>🏠 Apartment ${o.aptId}</h3>
+    ${subTime}${badge}${delTime}${lines}
+    <p class="sline">🕐 <b>${o.time || '—'}</b></p>
+    <p class="sline">💳 <b>${o.payment || '—'}</b></p>
+    <p class="stotal">${o.total || 0} NOK</p>
+    ${btn}
+  </div>`;
+}
+
+function markDelivered(aptId) {
+  const orders = getOrders();
+  if (!orders[aptId]) return;
+  const now = new Date().toLocaleTimeString('no-NO', {hour:'2-digit', minute:'2-digit'});
+  orders[aptId].delivered   = true;
+  orders[aptId].deliveredAt = now;
+  saveOrders(orders);
+  renderAdminOrders();
+  admTab('delivered');
+}
+
+function renderAdmProducts() {
+  const enabled = getEnabledProducts();
+  const grid    = document.getElementById('adm-product-grid');
+  grid.innerHTML = '';
+  ALL_PRODUCTS.forEach(prod => {
+    const on = enabled.includes(prod.id);
+    grid.innerHTML += `
+      <div class="prod-toggle ${on ? 'on' : ''}" id="adm-ptog-${prod.id}"
+           onclick="admToggleProduct('${prod.id}')">
+        <span class="pname">${prod.label}</span>
+        <span class="check">${on ? '✓' : ''}</span>
+      </div>`;
+  });
+}
+
+function admToggleProduct(pid) {
+  let enabled = getEnabledProducts();
+  if (enabled.includes(pid)) {
+    enabled = enabled.filter(p => p !== pid);
+  } else {
+    enabled.push(pid);
+  }
+  LS.set('enabled_products', enabled);
+  renderAdmProducts();
+  // also refresh superadmin grid if open
+  const saGrid = document.getElementById('sa-product-grid');
+  if (saGrid && saGrid.innerHTML) renderSaProducts();
+}
+</script>
+
+<script>
+// ══════════════════════════════════════════════
+//  SUPER ADMIN
+// ══════════════════════════════════════════════
+let saCurrentTab = 'orders';
+
+function showSuperAdmin() {
+  showScreen('superadmin');
+  saTab('orders');
+}
+
+function saTab(tab) {
+  saCurrentTab = tab;
+  ['orders','products','passwords'].forEach(t => {
+    document.getElementById('sa-' + t + '-panel').style.display = t === tab ? '' : 'none';
+    document.getElementById('sa-tab-' + t).classList.toggle('active', t === tab);
+  });
+  if (tab === 'orders')    renderSaOrders();
+  if (tab === 'products')  renderSaProducts();
+  if (tab === 'passwords') renderPwdFields();
+}
+
+function renderSaOrders() {
+  const orders = getOrders();
+  let html = '';
+  APARTMENTS.forEach(id => {
+    const o = orders[id];
+    if (o && (o.submitted || o.delivered)) {
+      html += renderAdmCard(o, !!o.delivered);
+      html += `<button class="btn btn-secondary" style="margin-bottom:.8rem"
+               onclick="saResetOrder('${id}')">🗑️ Reset ${id}</button>`;
+    }
+  });
+  if (!html) html = '<p class="info">No orders yet</p>';
+  document.getElementById('sa-orders-list').innerHTML = html;
+
+  // rebind deliver buttons
+  document.querySelectorAll('[data-deliver]').forEach(btn => {
+    btn.addEventListener('click', () => markDelivered(btn.dataset.deliver));
+  });
+}
+
+function saResetOrder(aptId) {
+  const orders = getOrders();
+  delete orders[aptId];
+  saveOrders(orders);
+  renderSaOrders();
+}
+
+function resetAll() {
+  if (!confirm('Reset ALL orders?')) return;
+  saveOrders({});
+  renderSaOrders();
+}
+
+// ── PRODUCTS ──
+function renderSaProducts() {
+  const enabled = getEnabledProducts();
+  const grid    = document.getElementById('sa-product-grid');
+  grid.innerHTML = '';
+  ALL_PRODUCTS.forEach(prod => {
+    const on = enabled.includes(prod.id);
+    grid.innerHTML += `
+      <div class="prod-toggle ${on ? 'on' : ''}" id="ptog-${prod.id}"
+           onclick="toggleProduct('${prod.id}')">
+        <span class="pname">${prod.label}</span>
+        <span class="check">${on ? '✓' : ''}</span>
+      </div>`;
+  });
+}
+
+function toggleProduct(pid) {
+  let enabled = getEnabledProducts();
+  if (enabled.includes(pid)) {
+    enabled = enabled.filter(p => p !== pid);
+  } else {
+    enabled.push(pid);
+  }
+  LS.set('enabled_products', enabled);
+  renderSaProducts();
+}
+
+// ── PASSWORDS ──
+const PWD_ACCOUNTS = [
+  { key:'superadmin', label:'Super Admin' },
+  { key:'admin',      label:'Admin (viewer)' },
+  { key:'A1',         label:'Apartment A1' },
+  { key:'B2',         label:'Apartment B2' },
+  { key:'C3',         label:'Apartment C3' },
+  { key:'D4',         label:'Apartment D4' },
+];
+
+function renderPwdFields() {
+  const container = document.getElementById('pwd-fields');
+  container.innerHTML = '';
+  PWD_ACCOUNTS.forEach(acc => {
+    container.innerHTML += `
+      <div style="margin-bottom:.8rem">
+        <label>${acc.label}</label>
+        <input type="password" id="pwd-${acc.key}" placeholder="New password (blank = keep current)"/>
+      </div>`;
+  });
+}
+
+function savePasswords() {
+  const pwds = getPasswords();
+  let changed = 0;
+  PWD_ACCOUNTS.forEach(acc => {
+    const val = document.getElementById('pwd-' + acc.key).value.trim();
+    if (val) { pwds[acc.key] = val; changed++; }
+  });
+  LS.set('passwords', pwds);
+  const msg = document.getElementById('pwd-msg');
+  msg.textContent = changed ? `✓ Updated ${changed} password(s).` : 'Nothing changed.';
+  setTimeout(() => { msg.textContent = ''; }, 2500);
+  renderPwdFields();
+}
+
+// ══════════════════════════════════════════════
+//  INIT
+// ══════════════════════════════════════════════
+// Pre-fill apt from URL ?apt=A1
+const urlApt = new URLSearchParams(location.search).get('apt');
+if (urlApt && APARTMENTS.includes(urlApt.toUpperCase())) {
+  setLoginTab('tenant');
+  document.getElementById('apt-select').value = urlApt.toUpperCase();
+}
+</script>
+</body>
+</html>
