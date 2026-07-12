@@ -15,160 +15,261 @@ from database import (
 init_db()
 st.set_page_config(page_title="Strawberry Orders", page_icon="🍓", layout="centered")
 
-# ── CSS ───────────────────────────────────────────────────────────────────────
-st.markdown("""
-<style>
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+# ── THEME ─────────────────────────────────────────────────────────────────────
+if "theme" not in st.session_state:
+    st.session_state.theme = "dark"
 
+# ── CSS ───────────────────────────────────────────────────────────────────────
+DARK_CSS = """
 html, body, [data-testid="stAppViewContainer"], section[data-testid="stMain"] {
-    font-family: 'Inter', sans-serif !important;
     background: linear-gradient(160deg,#1a0005 0%,#2d0010 40%,#150800 100%) fixed !important;
     color: #f0d0d5 !important;
 }
 [data-testid="stHeader"] {
     background: rgba(26,0,5,0.92) !important;
-    backdrop-filter: blur(12px);
     border-bottom: 1px solid rgba(255,100,120,0.1);
 }
-::-webkit-scrollbar{width:5px}
 ::-webkit-scrollbar-track{background:#1a0005}
-::-webkit-scrollbar-thumb{background:#8b1a2a;border-radius:4px}
-
-/* typography */
-h1,h2,h3{font-family:'Inter',sans-serif !important; color:#ff8fa3 !important; font-weight:800 !important}
-label,[data-testid="stWidgetLabel"]{color:#c08090 !important; font-size:.88rem !important}
-[data-testid="stCaptionContainer"] p{color:#7a4050 !important}
-
-/* inputs */
+::-webkit-scrollbar-thumb{background:#8b1a2a}
+h1,h2,h3{ color:#ff8fa3 !important }
+label,[data-testid="stWidgetLabel"]{ color:#c08090 !important }
+[data-testid="stCaptionContainer"] p{ color:#7a4050 !important }
 [data-testid="stTextInput"] input,
 [data-testid="stNumberInput"] input {
-    background:rgba(255,100,120,0.06) !important;
-    color:#f0d0d5 !important;
+    background:rgba(255,100,120,0.06) !important; color:#f0d0d5 !important;
     border:1px solid rgba(255,100,120,0.2) !important;
-    border-radius:12px !important;
-    font-size:1rem !important;
 }
 [data-testid="stTextInput"] input:focus,
 [data-testid="stNumberInput"] input:focus{
-    border-color:#e05070 !important;
-    box-shadow:0 0 0 3px rgba(224,80,112,0.15) !important;
+    border-color:#e05070 !important; box-shadow:0 0 0 3px rgba(224,80,112,0.15) !important;
 }
-
-/* radio */
-[data-testid="stRadio"] label{color:#d0a0a8 !important}
-[data-testid="stRadio"] > div{gap:.4rem !important}
-
-/* metrics */
-[data-testid="stMetricLabel"]{color:#c08090 !important}
-[data-testid="stMetricValue"]{color:#ff8fa3 !important; font-weight:800 !important}
-
-/* divider */
-hr{border-color:rgba(255,100,120,0.12) !important; margin:1.2rem 0 !important}
-
-/* tabs */
-button[data-baseweb="tab"]{color:#805060 !important; font-weight:600 !important; background:transparent !important}
-button[data-baseweb="tab"][aria-selected="true"]{color:#ff8fa3 !important; border-bottom:3px solid #e05070 !important}
-[data-testid="stTabs"] [role="tablist"]{border-bottom:1px solid rgba(255,100,120,0.15) !important; gap:.5rem !important}
-
-/* expander */
-details{background:rgba(255,80,100,0.04) !important; border:1px solid rgba(255,100,120,0.12) !important; border-radius:14px !important}
-details summary{color:#b07080 !important; font-weight:600 !important}
-
-/* alerts */
-[data-testid="stAlert"]{border-radius:14px !important; border:1px solid rgba(255,100,120,0.2) !important}
-
-/* primary button */
-button[kind="primary"]{
-    background:linear-gradient(135deg,#8b1a2a 0%,#c0392b 55%,#e05070 100%) !important;
-    border:none !important; color:#fff !important; font-weight:700 !important;
-    border-radius:12px !important; letter-spacing:.3px !important;
-    box-shadow:0 4px 15px rgba(192,57,43,0.35) !important;
-    transition:all .2s !important;
-}
-button[kind="primary"]:hover{transform:translateY(-1px) !important; box-shadow:0 6px 20px rgba(192,57,43,0.5) !important}
-
-/* secondary button */
+[data-testid="stRadio"] label{ color:#d0a0a8 !important }
+[data-testid="stMetricLabel"]{ color:#c08090 !important }
+[data-testid="stMetricValue"]{ color:#ff8fa3 !important; font-weight:800 !important }
+hr{ border-color:rgba(255,100,120,0.12) !important }
+button[data-baseweb="tab"]{ color:#805060 !important }
+button[data-baseweb="tab"][aria-selected="true"]{ color:#ff8fa3 !important; border-bottom:3px solid #e05070 !important }
+[data-testid="stTabs"] [role="tablist"]{ border-bottom:1px solid rgba(255,100,120,0.15) !important }
+details{ background:rgba(255,80,100,0.04) !important; border:1px solid rgba(255,100,120,0.12) !important }
+details summary{ color:#b07080 !important }
+[data-testid="stAlert"]{ border:1px solid rgba(255,100,120,0.2) !important }
 button[kind="secondary"]{
-    background:rgba(255,80,100,0.07) !important;
+    background:rgba(255,80,100,0.07) !important; color:#d0a0a8 !important;
     border:1px solid rgba(255,100,120,0.25) !important;
-    color:#d0a0a8 !important; border-radius:12px !important;
 }
-button[kind="secondary"]:hover{background:rgba(255,80,100,0.14) !important}
-
-/* ── custom components ── */
 .hero{
-    text-align:center;
-    padding:2rem 1rem 1.5rem 1rem;
     background:linear-gradient(135deg,rgba(139,26,42,0.3),rgba(30,5,10,0.8));
-    border-radius:24px; margin-bottom:1.5rem;
     border:1px solid rgba(255,100,120,0.15);
 }
-.hero h1{font-size:2.2rem !important; margin:0 !important}
-.hero p{color:#9a6070; font-size:.95rem; margin-top:.4rem}
-
+.hero p{ color:#9a6070 }
 .ocard{
     background:linear-gradient(135deg,rgba(139,26,42,0.28) 0%,rgba(20,5,8,0.95) 100%);
-    border-radius:20px; padding:1.5rem 1.8rem;
-    border:1px solid rgba(224,80,112,0.22);
-    border-left:5px solid #e05070;
-    box-shadow:0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,150,170,0.06);
-    margin-bottom:.6rem;
+    border:1px solid rgba(224,80,112,0.22); border-left:5px solid #e05070;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
 }
 .ocard.delivered{
     background:linear-gradient(135deg,rgba(20,80,40,0.28),rgba(5,15,8,0.95));
     border-color:rgba(46,204,113,0.25); border-left-color:#27ae60;
 }
-.ocard h3{margin:0 0 .2rem; font-size:1.3rem; color:#ff8fa3; font-weight:800}
-.ocard.delivered h3{color:#2ecc71}
-.ocard .ts{font-size:.8rem; color:#603040; margin-bottom:.8rem}
-.ocard .row{font-size:.95rem; margin:.35rem 0; color:#c0a0a8}
-.ocard .row b{color:#f0d0d5}
-.ocard .tot{font-size:1.35rem; font-weight:800; color:#ff8fa3; margin-top:.9rem}
-.ocard.delivered .tot{color:#2ecc71}
-.badge-ok{display:inline-block;background:linear-gradient(135deg,#145028,#27ae60);
-          color:#fff;font-size:.72rem;font-weight:700;letter-spacing:1.2px;
-          text-transform:uppercase;padding:.2rem .7rem;border-radius:20px;margin-bottom:.5rem}
-
-.scard{border-radius:14px;padding:.9rem 1.4rem;margin-bottom:.6rem;
-       background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);
-       border-left:4px solid #2e1020}
-.scard.draft{background:rgba(243,156,18,0.06);border-color:rgba(243,156,18,0.15);border-left-color:#f39c12}
-.scard h4{margin:0;font-size:1.05rem;color:#c09090}
-.scard .st{font-size:.82rem;color:#6a3040;margin-top:.15rem}
-
+.ocard h3{ color:#ff8fa3 }
+.ocard .ts{ color:#603040 }
+.ocard .row{ color:#c0a0a8 }
+.ocard .row b{ color:#f0d0d5 }
+.ocard .tot{ color:#ff8fa3 }
+.ocard.delivered h3{ color:#2ecc71 }
+.ocard.delivered .tot{ color:#2ecc71 }
+.scard{ background:rgba(255,255,255,0.02); border:1px solid rgba(255,255,255,0.04); border-left:4px solid #2e1020 }
+.scard.draft{ background:rgba(243,156,18,0.06); border-color:rgba(243,156,18,0.15); border-left-color:#f39c12 }
+.scard h4{ color:#c09090 }
+.scard .st{ color:#6a3040 }
 .sumbox{
     background:linear-gradient(135deg,rgba(139,26,42,0.25),rgba(10,2,5,0.97));
-    border-radius:20px; padding:1.5rem 2rem; margin-top:1.2rem;
-    border:1px solid rgba(224,80,112,0.3);
-    box-shadow:0 4px 28px rgba(139,26,42,0.25);
+    border:1px solid rgba(224,80,112,0.3); box-shadow:0 4px 28px rgba(139,26,42,0.25);
 }
-.sumbox h3{margin:0 0 .7rem; color:#ff8fa3; font-size:1.25rem}
-.sumbox .row{font-size:1rem;color:#c0a0a8;margin:.3rem 0}
-.sumbox .row b{color:#f0d0d5}
-.sumbox .big{font-size:1.9rem;font-weight:800;margin-top:.6rem;
-             background:linear-gradient(90deg,#ff8fa3,#e05070);
-             -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.sumbox h3{ color:#ff8fa3 }
+.sumbox .row{ color:#c0a0a8 }
+.sumbox .row b{ color:#f0d0d5 }
+.sumbox .big{ background:linear-gradient(90deg,#ff8fa3,#e05070); -webkit-background-clip:text; -webkit-text-fill-color:transparent }
+.ptog{ background:rgba(255,100,120,0.05); border:1.5px solid rgba(255,100,120,0.15) }
+.ptog:hover{ background:rgba(255,100,120,0.1); border-color:rgba(255,100,120,0.3) }
+.ptog.on{ background:rgba(139,26,42,0.35); border-color:rgba(224,80,112,0.5) }
+.ptog .name{ color:#c0a0a8 }
+.ptog.on .name{ color:#ff8fa3 }
+.ptog .dot{ background:#3a1020 }
+.ptog.on .dot{ background:#e05070; box-shadow:0 0 6px rgba(224,80,112,0.6) }
+"""
 
-/* product toggle grid */
-.ptog-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem}
-.ptog{
-    display:flex;align-items:center;gap:.8rem;
-    background:rgba(255,100,120,0.05);
-    border:1.5px solid rgba(255,100,120,0.15);
-    border-radius:14px;padding:.85rem 1.1rem;cursor:pointer;
-    transition:all .2s;
+LIGHT_CSS = """
+html, body, [data-testid="stAppViewContainer"], section[data-testid="stMain"] {
+    background: linear-gradient(160deg,#fff5f7 0%,#ffe8ec 50%,#fff9f0 100%) fixed !important;
+    color: #2d0a10 !important;
 }
-.ptog:hover{background:rgba(255,100,120,0.1);border-color:rgba(255,100,120,0.3)}
-.ptog.on{background:rgba(139,26,42,0.35);border-color:rgba(224,80,112,0.5)}
-.ptog .ico{font-size:1.5rem}
-.ptog .name{font-size:.95rem;color:#c0a0a8;font-weight:600}
-.ptog.on .name{color:#ff8fa3}
-.ptog .dot{width:10px;height:10px;border-radius:50%;background:#3a1020;
-           margin-left:auto;transition:all .2s;flex-shrink:0}
-.ptog.on .dot{background:#e05070;box-shadow:0 0 6px rgba(224,80,112,0.6)}
-</style>
-""", unsafe_allow_html=True)
+[data-testid="stHeader"] {
+    background: rgba(255,245,247,0.95) !important;
+    border-bottom: 1px solid rgba(192,57,43,0.15);
+}
+::-webkit-scrollbar-track{ background:#fff5f7 }
+::-webkit-scrollbar-thumb{ background:#e05070 }
+h1,h2,h3{ color:#c0392b !important }
+label,[data-testid="stWidgetLabel"]{ color:#7a3040 !important }
+[data-testid="stCaptionContainer"] p{ color:#a06070 !important }
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input {
+    background:#fff !important; color:#2d0a10 !important;
+    border:1px solid rgba(192,57,43,0.25) !important;
+}
+[data-testid="stTextInput"] input:focus,
+[data-testid="stNumberInput"] input:focus{
+    border-color:#c0392b !important; box-shadow:0 0 0 3px rgba(192,57,43,0.12) !important;
+}
+[data-testid="stRadio"] label{ color:#5a2030 !important }
+[data-testid="stMetricLabel"]{ color:#a06070 !important }
+[data-testid="stMetricValue"]{ color:#c0392b !important; font-weight:800 !important }
+hr{ border-color:rgba(192,57,43,0.15) !important }
+button[data-baseweb="tab"]{ color:#c08090 !important }
+button[data-baseweb="tab"][aria-selected="true"]{ color:#c0392b !important; border-bottom:3px solid #c0392b !important }
+[data-testid="stTabs"] [role="tablist"]{ border-bottom:1px solid rgba(192,57,43,0.15) !important }
+details{ background:rgba(192,57,43,0.03) !important; border:1px solid rgba(192,57,43,0.12) !important }
+details summary{ color:#a06070 !important }
+[data-testid="stAlert"]{ border:1px solid rgba(192,57,43,0.2) !important }
+button[kind="secondary"]{
+    background:rgba(192,57,43,0.06) !important; color:#7a3040 !important;
+    border:1px solid rgba(192,57,43,0.2) !important;
+}
+.hero{
+    background:linear-gradient(135deg,rgba(255,200,200,0.5),rgba(255,240,235,0.8));
+    border:1px solid rgba(192,57,43,0.15);
+}
+.hero p{ color:#a06070 }
+.ocard{
+    background:linear-gradient(135deg,rgba(255,220,220,0.5) 0%,rgba(255,250,248,0.98) 100%);
+    border:1px solid rgba(192,57,43,0.18); border-left:5px solid #c0392b;
+    box-shadow:0 4px 20px rgba(192,57,43,0.1);
+}
+.ocard.delivered{
+    background:linear-gradient(135deg,rgba(200,255,220,0.4),rgba(248,255,250,0.98));
+    border-color:rgba(39,174,96,0.25); border-left-color:#27ae60;
+}
+.ocard h3{ color:#c0392b }
+.ocard .ts{ color:#c09090 }
+.ocard .row{ color:#7a5060 }
+.ocard .row b{ color:#2d0a10 }
+.ocard .tot{ color:#c0392b }
+.ocard.delivered h3{ color:#27ae60 }
+.ocard.delivered .tot{ color:#27ae60 }
+.scard{ background:rgba(255,255,255,0.6); border:1px solid rgba(192,57,43,0.08); border-left:4px solid #f0d0d5 }
+.scard.draft{ background:rgba(243,156,18,0.05); border-color:rgba(243,156,18,0.15); border-left-color:#f39c12 }
+.scard h4{ color:#7a4050 }
+.scard .st{ color:#a08090 }
+.sumbox{
+    background:linear-gradient(135deg,rgba(255,200,200,0.4),rgba(255,250,248,0.97));
+    border:1px solid rgba(192,57,43,0.2); box-shadow:0 4px 20px rgba(192,57,43,0.08);
+}
+.sumbox h3{ color:#c0392b }
+.sumbox .row{ color:#7a5060 }
+.sumbox .row b{ color:#2d0a10 }
+.sumbox .big{ background:linear-gradient(90deg,#c0392b,#e05070); -webkit-background-clip:text; -webkit-text-fill-color:transparent }
+.ptog{ background:rgba(192,57,43,0.04); border:1.5px solid rgba(192,57,43,0.12) }
+.ptog:hover{ background:rgba(192,57,43,0.08); border-color:rgba(192,57,43,0.25) }
+.ptog.on{ background:rgba(192,57,43,0.12); border-color:rgba(192,57,43,0.4) }
+.ptog .name{ color:#7a5060 }
+.ptog.on .name{ color:#c0392b }
+.ptog .dot{ background:#f0d0d5 }
+.ptog.on .dot{ background:#c0392b; box-shadow:0 0 6px rgba(192,57,43,0.4) }
+"""
 
+# Shared CSS (both modes)
+SHARED_CSS = """
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+html,body,[data-testid="stAppViewContainer"],section[data-testid="stMain"]{
+    font-family:'Inter',sans-serif !important;
+}
+::-webkit-scrollbar{width:5px}
+[data-testid="stHeader"]{ backdrop-filter:blur(12px) }
+h1,h2,h3{ font-family:'Inter',sans-serif !important; font-weight:800 !important }
+label,[data-testid="stWidgetLabel"]{ font-size:.88rem !important }
+[data-testid="stTextInput"] input,
+[data-testid="stNumberInput"] input { border-radius:12px !important; font-size:1rem !important }
+[data-testid="stRadio"] > div{ gap:.4rem !important }
+hr{ margin:1.2rem 0 !important }
+button[data-baseweb="tab"]{ font-weight:600 !important; background:transparent !important }
+[data-testid="stTabs"] [role="tablist"]{ gap:.5rem !important }
+details{ border-radius:14px !important }
+[data-testid="stAlert"]{ border-radius:14px !important }
+button[kind="primary"]{
+    background:linear-gradient(135deg,#8b1a2a 0%,#c0392b 55%,#e05070 100%) !important;
+    border:none !important; color:#fff !important; font-weight:700 !important;
+    border-radius:12px !important; letter-spacing:.3px !important;
+    box-shadow:0 4px 15px rgba(192,57,43,0.35) !important; transition:all .2s !important;
+}
+button[kind="primary"]:hover{ transform:translateY(-1px) !important; box-shadow:0 6px 20px rgba(192,57,43,0.5) !important }
+button[kind="secondary"]{ border-radius:12px !important }
+.hero{ text-align:center; padding:2rem 1rem 1.5rem; border-radius:24px; margin-bottom:1.5rem }
+.hero h1{ font-size:2.2rem !important; margin:0 !important }
+.hero p{ font-size:.95rem; margin-top:.4rem }
+.ocard{ border-radius:20px; padding:1.5rem 1.8rem; margin-bottom:.6rem }
+.ocard h3{ margin:0 0 .2rem; font-size:1.3rem; font-weight:800 }
+.ocard .ts{ font-size:.8rem; margin-bottom:.8rem }
+.ocard .row{ font-size:.95rem; margin:.35rem 0 }
+.ocard .tot{ font-size:1.35rem; font-weight:800; margin-top:.9rem }
+.ocard.delivered .tot{ color:#2ecc71 }
+.badge-ok{ display:inline-block;
+    background:linear-gradient(135deg,#145028,#27ae60);
+    color:#fff; font-size:.72rem; font-weight:700; letter-spacing:1.2px;
+    text-transform:uppercase; padding:.2rem .7rem; border-radius:20px; margin-bottom:.5rem }
+.scard{ border-radius:14px; padding:.9rem 1.4rem; margin-bottom:.6rem }
+.scard h4{ margin:0; font-size:1.05rem }
+.scard .st{ font-size:.82rem; margin-top:.15rem }
+.sumbox{ border-radius:20px; padding:1.5rem 2rem; margin-top:1.2rem }
+.sumbox h3{ margin:0 0 .7rem; font-size:1.25rem }
+.sumbox .row{ font-size:1rem; margin:.3rem 0 }
+.sumbox .big{ font-size:1.9rem; font-weight:800; margin-top:.6rem;
+    -webkit-background-clip:text; -webkit-text-fill-color:transparent }
+.ptog-grid{ display:grid; grid-template-columns:1fr 1fr; gap:.75rem; margin-top:.5rem }
+.ptog{ display:flex; align-items:center; gap:.8rem;
+    border-radius:14px; padding:.85rem 1.1rem; cursor:pointer; transition:all .2s }
+.ptog .ico{ font-size:1.5rem }
+.ptog .name{ font-size:.95rem; font-weight:600 }
+.ptog .dot{ width:10px; height:10px; border-radius:50%; margin-left:auto;
+    transition:all .2s; flex-shrink:0 }
+
+/* ── Mobile responsive ── */
+@media (max-width: 768px) {
+    .hero h1 { font-size:1.6rem !important }
+    .ocard { padding:1.1rem 1.2rem; border-radius:16px }
+    .ocard h3 { font-size:1.1rem }
+    .ocard .tot { font-size:1.15rem }
+    .sumbox { padding:1.2rem 1.4rem }
+    .sumbox .big { font-size:1.5rem }
+    .ptog-grid { grid-template-columns:1fr }
+    [data-testid="stTabs"] [role="tablist"] { gap:.2rem !important; flex-wrap:wrap }
+    button[data-baseweb="tab"] { font-size:.8rem !important; padding:.4rem .5rem !important }
+    [data-testid="stMetricValue"] { font-size:1.4rem !important }
+}
+@media (max-width: 480px) {
+    .hero { padding:1.5rem .8rem 1rem; border-radius:18px; margin-bottom:1rem }
+    .hero h1 { font-size:1.4rem !important }
+    .ocard { padding:.9rem 1rem; border-radius:14px }
+    .ocard .row { font-size:.85rem }
+    .scard { padding:.7rem 1rem }
+    .sumbox { padding:1rem 1.2rem; border-radius:16px }
+}
+"""
+
+theme_css = DARK_CSS if st.session_state.theme == "dark" else LIGHT_CSS
+st.markdown(f"<style>{SHARED_CSS}{theme_css}</style>", unsafe_allow_html=True)
+
+# Theme toggle button in top-right
+def toggle_theme():
+    st.session_state.theme = "light" if st.session_state.theme == "dark" else "dark"
+
+theme_icon = "☀️" if st.session_state.theme == "dark" else "🌙"
+theme_label = "Light mode" if st.session_state.theme == "dark" else "Dark mode"
+cols_theme = st.columns([8, 1])
+with cols_theme[1]:
+    if st.button(theme_icon, key="theme_toggle", help=theme_label):
+        toggle_theme()
+        st.rerun()
 # ── session ───────────────────────────────────────────────────────────────────
 if "user"           not in st.session_state: st.session_state.user = None
 if "confirm_del"    not in st.session_state: st.session_state.confirm_del = None
@@ -300,18 +401,6 @@ def show_login():
         else:
             st.error("Wrong username or password.")
 
-    with st.expander("Default accounts"):
-        st.markdown("""
-| Username | Password | Role |
-|---|---|---|
-| `superadmin` | `superadmin123` | Full control |
-| `admin` | `admin123` | Orders + stock |
-| `A1` | `1111` | Apartment A1 |
-| `B2` | `2222` | Apartment B2 |
-| `C3` | `3333` | Apartment C3 |
-| `D4` | `4444` | Apartment D4 |
-""")
-
 
 # ╔══════════════════════════════════════════════════════╗
 # ║  TENANT                                              ║
@@ -398,7 +487,7 @@ def show_admin(user):
         st.write("")
         if st.button("Log out", key="a_out"): logout()
 
-    tab_active, tab_delivered, tab_stock = st.tabs(["🚛 To deliver", "✅ Delivered", "🛒 Stock"])
+    tab_active, tab_delivered, tab_stock, tab_qr_adm = st.tabs(["🚛 To deliver", "✅ Delivered", "🛒 Stock", "📱 QR Codes"])
 
     @st.fragment(run_every=15)
     def orders_fragment():
@@ -479,6 +568,24 @@ def show_admin(user):
         st.caption("Toggle on the products you have in stock. Tenants will only see enabled items.")
         available = get_available_products()
         render_product_toggles(available, prefix="adm")
+
+    with tab_qr_adm:
+        st.subheader("QR Codes")
+        st.caption("Scan → auto-login. No password needed. Print and stick on each door.")
+        base_url = get_base_url()
+        cols = st.columns(4)
+        for apt_id, apt_name in APARTMENTS.items():
+            token    = get_token_for_apt(apt_id)
+            url      = f"{base_url}/?token={token}"
+            qr_bytes = make_qr_bytes(url)
+            with cols[apt_id - 1]:
+                st.image(qr_bytes, caption=f"Apt {apt_name}", use_container_width=True)
+                st.download_button(f"⬇ {apt_name}", data=qr_bytes,
+                                   file_name=f"qr_{apt_name}.png", mime="image/png",
+                                   key=f"adm_dl_{apt_id}", use_container_width=True)
+        with st.expander("Direct links"):
+            for apt_id, apt_name in APARTMENTS.items():
+                st.code(f"{base_url}/?token={get_token_for_apt(apt_id)}")
 
 
 def render_product_toggles(available: list, prefix: str):
