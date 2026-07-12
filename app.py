@@ -1,4 +1,5 @@
 import io
+import time
 import streamlit as st
 import qrcode
 from database import (
@@ -171,12 +172,52 @@ button[kind="secondary"]:hover{background:rgba(255,80,100,0.14) !important}
 # ── session ───────────────────────────────────────────────────────────────────
 if "user"           not in st.session_state: st.session_state.user = None
 if "confirm_del"    not in st.session_state: st.session_state.confirm_del = None
+if "known_orders"   not in st.session_state: st.session_state.known_orders = set()
+
+# Notification JS — injected once, asks browser permission, exposes notifyOrder()
+st.components.v1.html("""
+<script>
+// Request notification permission on load
+if ("Notification" in window && Notification.permission === "default") {
+    Notification.requestPermission();
+}
+
+// Global function called by Streamlit when a new order arrives
+window.notifyNewOrder = function(aptName, total) {
+    if ("Notification" in window && Notification.permission === "granted") {
+        const n = new Notification("🍓 New order!", {
+            body: "Apartment " + aptName + " — " + total + " NOK",
+            icon: "https://em-content.zobj.net/source/twitter/376/strawberry_1f353.png",
+            badge: "https://em-content.zobj.net/source/twitter/376/strawberry_1f353.png",
+            tag: "order-" + aptName,
+        });
+        n.onclick = function() { window.focus(); };
+    }
+};
+</script>
+""", height=0)
 
 def logout():
     st.session_state.user        = None
     st.session_state.confirm_del = None
+    st.session_state.known_orders = set()
     st.query_params.clear()
     st.rerun()
+
+def check_and_notify(orders):
+    """Fire browser notifications for any newly submitted orders."""
+    current = {o["apt_id"] for o in orders if o["submitted"]}
+    new     = current - st.session_state.known_orders
+    for apt_id in new:
+        o = next(x for x in orders if x["apt_id"] == apt_id)
+        st.components.v1.html(f"""
+<script>
+if (window.notifyNewOrder) {{
+    window.notifyNewOrder("{o['apt_name']}", "{o['total_nok']:.0f}");
+}}
+</script>
+""", height=0)
+    st.session_state.known_orders = current
 
 def get_base_url():
     try:    return st.context.url.split("?")[0].rstrip("/")
@@ -359,76 +400,80 @@ def show_admin(user):
 
     tab_active, tab_delivered, tab_stock = st.tabs(["🚛 To deliver", "✅ Delivered", "🛒 Stock"])
 
-    orders    = get_all_full_orders()
-    submitted = [o for o in orders if o["submitted"]]
-    active    = [o for o in submitted if not o.get("delivered")]
-    delivered = [o for o in submitted if o.get("delivered")]
-    drafts    = [o for o in orders if not o["submitted"] and order_has_items(o)]
+    @st.fragment(run_every=15)
+    def orders_fragment():
+        orders    = get_all_full_orders()
+        check_and_notify(orders)
+        submitted = [o for o in orders if o["submitted"]]
+        active    = [o for o in submitted if not o.get("delivered")]
+        delivered = [o for o in submitted if o.get("delivered")]
+        drafts    = [o for o in orders if not o["submitted"] and order_has_items(o)]
 
-    # ── To deliver ────────────────────────────────────────────────────────
-    with tab_active:
-        if not active and not drafts:
-            st.markdown('<div class="scard"><h4 style="text-align:center;color:#6a3040;padding:.4rem 0">No orders yet</h4></div>', unsafe_allow_html=True)
-        else:
-            for o in active:
-                render_order_card(o)
-                # Confirm-before-deliver
-                if st.session_state.confirm_del == o["apt_id"]:
-                    st.warning(f"Are you sure you want to mark **{o['apt_name']}** as delivered?")
-                    cc1, cc2 = st.columns(2)
-                    with cc1:
-                        if st.button("Yes, delivered", type="primary", key=f"yes_{o['apt_id']}"):
-                            mark_delivered(o["apt_id"])
-                            st.session_state.confirm_del = None
+        with tab_active:
+            # refresh indicator
+            st.caption(f"Auto-refreshes every 15s · Last checked: {time.strftime('%H:%M:%S')}")
+
+            if not active and not drafts:
+                st.markdown('<div class="scard"><h4 style="text-align:center;color:#6a3040;padding:.4rem 0">No orders yet</h4></div>', unsafe_allow_html=True)
+            else:
+                for o in active:
+                    render_order_card(o)
+                    if st.session_state.confirm_del == o["apt_id"]:
+                        st.warning(f"Are you sure you want to mark **{o['apt_name']}** as delivered?")
+                        cc1, cc2 = st.columns(2)
+                        with cc1:
+                            if st.button("Yes, delivered", type="primary", key=f"yes_{o['apt_id']}"):
+                                mark_delivered(o["apt_id"])
+                                st.session_state.confirm_del = None
+                                st.rerun()
+                        with cc2:
+                            if st.button("Cancel", key=f"no_{o['apt_id']}"):
+                                st.session_state.confirm_del = None
+                                st.rerun()
+                    else:
+                        if st.button(f"🚚 Mark as delivered — {o['apt_name']}",
+                                     key=f"dlv_{o['apt_id']}", type="primary",
+                                     use_container_width=True):
+                            st.session_state.confirm_del = o["apt_id"]
                             st.rerun()
-                    with cc2:
-                        if st.button("Cancel", key=f"no_{o['apt_id']}"):
-                            st.session_state.confirm_del = None
-                            st.rerun()
-                else:
-                    if st.button(f"🚚 Mark as delivered — {o['apt_name']}",
-                                 key=f"dlv_{o['apt_id']}", type="primary",
-                                 use_container_width=True):
-                        st.session_state.confirm_del = o["apt_id"]
-                        st.rerun()
-                st.write("")
+                    st.write("")
 
-            for o in drafts:
-                st.markdown(f'<div class="scard draft"><h4>&#128203; Apartment {o["apt_name"]}</h4>'
-                            f'<p class="st">Draft — not submitted yet</p></div>', unsafe_allow_html=True)
-            if drafts:
-                st.warning(f"{len(drafts)} apartment(s) have a draft not yet submitted.")
+                for o in drafts:
+                    st.markdown(f'<div class="scard draft"><h4>&#128203; Apartment {o["apt_name"]}</h4>'
+                                f'<p class="st">Draft — not submitted yet</p></div>', unsafe_allow_html=True)
+                if drafts:
+                    st.warning(f"{len(drafts)} apartment(s) have a draft not yet submitted.")
 
-        if active:
-            total_nok = sum(o["total_nok"] for o in active)
-            st.markdown(f"""
+            if active:
+                total_nok = sum(o["total_nok"] for o in active)
+                st.markdown(f"""
 <div class="sumbox">
   <h3>&#128230; Still to collect</h3>
   <p class="row">&#127968; <b>{len(active)}</b> apartment(s)</p>
   <p class="big">{total_nok:.0f} NOK</p>
 </div>""", unsafe_allow_html=True)
 
-    # ── Delivered ─────────────────────────────────────────────────────────
-    with tab_delivered:
-        if not delivered:
-            st.markdown('<div class="scard"><h4 style="text-align:center;color:#6a3040;padding:.4rem 0">No deliveries yet</h4></div>', unsafe_allow_html=True)
-        else:
-            for o in delivered:
-                render_order_card(o)
-                if st.button(f"↩ Undo delivery — {o['apt_name']}", key=f"undo_{o['apt_id']}"):
-                    undeliver_order(o["apt_id"])
-                    st.rerun()
-                st.write("")
+        with tab_delivered:
+            if not delivered:
+                st.markdown('<div class="scard"><h4 style="text-align:center;color:#6a3040;padding:.4rem 0">No deliveries yet</h4></div>', unsafe_allow_html=True)
+            else:
+                for o in delivered:
+                    render_order_card(o)
+                    if st.button(f"↩ Undo delivery — {o['apt_name']}", key=f"undo_{o['apt_id']}"):
+                        undeliver_order(o["apt_id"])
+                        st.rerun()
+                    st.write("")
 
-            total_nok = sum(o["total_nok"] for o in delivered)
-            st.markdown(f"""
+                total_nok = sum(o["total_nok"] for o in delivered)
+                st.markdown(f"""
 <div class="sumbox">
   <h3>&#9989; Delivered today</h3>
   <p class="row">&#127968; <b>{len(delivered)}</b> apartment(s)</p>
   <p class="big">{total_nok:.0f} NOK</p>
 </div>""", unsafe_allow_html=True)
 
-    # ── Stock ─────────────────────────────────────────────────────────────
+    orders_fragment()
+
     with tab_stock:
         st.markdown("### What's available today?")
         st.caption("Toggle on the products you have in stock. Tenants will only see enabled items.")
@@ -466,47 +511,54 @@ def show_superadmin(user):
     tab_orders, tab_stock, tab_qr, tab_pwd = st.tabs(["📋 Orders", "🛒 Stock", "📱 QR Codes", "🔑 Passwords"])
 
     with tab_orders:
-        orders    = get_all_full_orders()
-        submitted = [o for o in orders if o["submitted"]]
-        active    = [o for o in submitted if not o.get("delivered")]
-        delivered = [o for o in submitted if o.get("delivered")]
-        drafts    = [o for o in orders if not o["submitted"] and order_has_items(o)]
+        @st.fragment(run_every=15)
+        def sa_orders_fragment():
+            orders    = get_all_full_orders()
+            check_and_notify(orders)
+            submitted = [o for o in orders if o["submitted"]]
+            active    = [o for o in submitted if not o.get("delivered")]
+            delivered = [o for o in submitted if o.get("delivered")]
+            drafts    = [o for o in orders if not o["submitted"] and order_has_items(o)]
 
-        if active:
-            st.subheader("To deliver")
-            for o in active:
-                render_order_card(o)
-                if st.button(f"Reset {o['apt_name']}", key=f"rsa_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
-                st.write("")
-        if delivered:
-            st.subheader("Delivered")
-            for o in delivered:
-                render_order_card(o)
+            st.caption(f"Auto-refreshes every 15s · Last checked: {time.strftime('%H:%M:%S')}")
+
+            if active:
+                st.subheader("To deliver")
+                for o in active:
+                    render_order_card(o)
+                    if st.button(f"Reset {o['apt_name']}", key=f"rsa_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
+                    st.write("")
+            if delivered:
+                st.subheader("Delivered")
+                for o in delivered:
+                    render_order_card(o)
+                    c1, c2 = st.columns(2)
+                    with c1:
+                        if st.button(f"↩ Undo {o['apt_name']}", key=f"undo_sa_{o['apt_id']}"): undeliver_order(o["apt_id"]); st.rerun()
+                    with c2:
+                        if st.button(f"Reset {o['apt_name']}", key=f"rsd_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
+                    st.write("")
+            if drafts:
+                st.subheader("Drafts")
+                for o in drafts:
+                    render_order_card(o, show_ts=False)
+                    if st.button(f"Reset {o['apt_name']}", key=f"rdr_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
+                    st.write("")
+            if not submitted and not drafts:
+                st.info("No orders yet.")
+
+            if submitted:
+                total_n = sum(o["total_nok"] for o in submitted)
+                st.divider()
                 c1, c2 = st.columns(2)
-                with c1:
-                    if st.button(f"↩ Undo {o['apt_name']}", key=f"undo_sa_{o['apt_id']}"): undeliver_order(o["apt_id"]); st.rerun()
-                with c2:
-                    if st.button(f"Reset {o['apt_name']}", key=f"rsd_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
-                st.write("")
-        if drafts:
-            st.subheader("Drafts")
-            for o in drafts:
-                render_order_card(o, show_ts=False)
-                if st.button(f"Reset {o['apt_name']}", key=f"rdr_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
-                st.write("")
-        if not submitted and not drafts:
-            st.info("No orders yet.")
+                c1.metric("Orders", len(submitted))
+                c2.metric("Total NOK", f"{total_n:.0f}")
 
-        if submitted:
-            total_n = sum(o["total_nok"] for o in submitted)
             st.divider()
-            c1, c2 = st.columns(2)
-            c1.metric("Orders", len(submitted))
-            c2.metric("Total NOK", f"{total_n:.0f}")
+            if st.button("🔄 Reset ALL orders", type="secondary", use_container_width=True):
+                reset_all_orders(); st.success("All reset."); st.rerun()
 
-        st.divider()
-        if st.button("🔄 Reset ALL orders", type="secondary", use_container_width=True):
-            reset_all_orders(); st.success("All reset."); st.rerun()
+        sa_orders_fragment()
 
     with tab_stock:
         st.markdown("### What's available today?")
