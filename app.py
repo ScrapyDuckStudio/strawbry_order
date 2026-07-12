@@ -266,7 +266,7 @@ def show_admin(user):
     with c2:
         st.write("")
         if st.button("Log out", key="a_out"): logout()
-    tab_active, tab_delivered, tab_stock, tab_qr_adm = st.tabs(["🚛 To deliver", "✅ Delivered", "🛒 Stock", "📱 QR Codes"])
+    tab_active, tab_delivered, tab_stock, tab_qr_adm, tab_install = st.tabs(["🚛 To deliver", "✅ Delivered", "🛒 Stock", "📱 QR Codes", "📲 Install App"])
 
     @st.fragment(run_every=15)
     def orders_fragment():
@@ -325,6 +325,27 @@ def show_admin(user):
             with cols[apt_id - 1]:
                 st.image(qr_bytes, caption=f"Apt {apt_name}", use_container_width=True)
                 st.download_button(f"⬇ {apt_name}", data=qr_bytes, file_name=f"qr_{apt_name}.png", mime="image/png", key=f"adm_dl_{apt_id}", use_container_width=True)
+
+    with tab_install:
+        st.subheader("📲 Install as Phone App")
+        st.markdown("""
+Get **push notifications** on your phone when new orders arrive — even when the browser is closed.
+
+**How to install:**
+
+1. Open this link on your phone:
+""")
+        pwa_url = "https://scrapyduckstudio.github.io/strawbry_order/"
+        st.code(pwa_url)
+        st.markdown(f"""
+2. **Android (Chrome):** Tap the install banner or menu → "Install app"
+3. **iPhone (Safari):** Tap Share ↗ → "Add to Home Screen"
+4. **Allow notifications** when prompted
+5. Done! You'll get a 🍓 notification whenever a new order comes in.
+""")
+        # QR code to the PWA page for easy scanning
+        pwa_qr = make_qr_bytes(pwa_url)
+        st.image(pwa_qr, caption="Scan to open install page", width=200)
 
 def render_product_toggles(available, prefix):
     cols = st.columns(2)
