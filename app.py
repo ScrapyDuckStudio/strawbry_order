@@ -28,7 +28,7 @@ html,body,[data-testid="stAppViewContainer"],section[data-testid="stMain"]{
 h1,h2,h3{font-family:'Inter',sans-serif !important;color:#ffffff !important;font-weight:800 !important}
 label,[data-testid="stWidgetLabel"]{color:#ffffff !important;font-size:.88rem !important}
 [data-testid="stCaptionContainer"] p{color:#cccccc !important}
-[data-testid="stTextInput"] input,[data-testid="stNumberInput"] input{background:#1a1a2e !important;color:#000000 !important;border:1px solid rgba(255,100,120,0.2) !important;border-radius:12px !important;font-size:1rem !important}
+[data-testid="stTextInput"] input,[data-testid="stNumberInput"] input{background:#ffffff !important;color:#000000 !important;border:1px solid rgba(255,100,120,0.2) !important;border-radius:12px !important;font-size:1rem !important}
 [data-testid="stTextInput"] input:focus,[data-testid="stNumberInput"] input:focus{border-color:#e05070 !important;box-shadow:0 0 0 3px rgba(224,80,112,0.15) !important}
 [data-testid="stRadio"] label{color:#ffffff !important}
 [data-testid="stRadio"] > div{gap:.4rem !important}
