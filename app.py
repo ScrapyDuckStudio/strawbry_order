@@ -1,4 +1,3 @@
-import re
 import io
 import streamlit as st
 import qrcode
@@ -6,212 +5,182 @@ from database import (
     init_db, verify_user, get_all_users, change_password,
     get_full_order, get_all_full_orders,
     save_order, submit_order, reset_all_orders, reset_apt_order,
-    mark_delivered, get_token_for_apt, verify_token,
-    PRODUCTS, APARTMENTS, PAYMENT_METHODS, TIME_SLOTS,
-    DELIVERY_START, DELIVERY_END,
+    mark_delivered, undeliver_order,
+    get_token_for_apt, verify_token,
+    get_available_products, set_product_available,
+    ALL_PRODUCTS, APARTMENTS, PAYMENT_METHODS, TIME_SLOTS,
 )
 
 init_db()
-
 st.set_page_config(page_title="Strawberry Orders", page_icon="🍓", layout="centered")
 
-# ── GLOBAL CSS ────────────────────────────────────────────────────────────────
+# ── CSS ───────────────────────────────────────────────────────────────────────
 st.markdown("""
 <style>
-/* background */
-[data-testid="stAppViewContainer"], section[data-testid="stMain"] {
-    background: linear-gradient(160deg, #1a0005 0%, #2d0010 35%, #1a0a00 70%, #0d0000 100%) fixed !important;
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800&display=swap');
+
+html, body, [data-testid="stAppViewContainer"], section[data-testid="stMain"] {
+    font-family: 'Inter', sans-serif !important;
+    background: linear-gradient(160deg,#1a0005 0%,#2d0010 40%,#150800 100%) fixed !important;
     color: #f0d0d5 !important;
 }
 [data-testid="stHeader"] {
-    background: rgba(26,0,5,0.9) !important;
-    backdrop-filter: blur(10px);
+    background: rgba(26,0,5,0.92) !important;
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(255,100,120,0.1);
 }
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:#1a0005}
+::-webkit-scrollbar-thumb{background:#8b1a2a;border-radius:4px}
 
-/* scrollbar */
-::-webkit-scrollbar { width: 5px; }
-::-webkit-scrollbar-track { background: #1a0005; }
-::-webkit-scrollbar-thumb { background: #8b1a2a; border-radius: 4px; }
-
-/* headings */
-h1, h2, h3 { color: #ff8fa3 !important; }
+/* typography */
+h1,h2,h3{font-family:'Inter',sans-serif !important; color:#ff8fa3 !important; font-weight:800 !important}
+label,[data-testid="stWidgetLabel"]{color:#c08090 !important; font-size:.88rem !important}
+[data-testid="stCaptionContainer"] p{color:#7a4050 !important}
 
 /* inputs */
 [data-testid="stTextInput"] input,
 [data-testid="stNumberInput"] input {
-    background: rgba(255,100,120,0.07) !important;
-    color: #f0d0d5 !important;
-    border: 1px solid rgba(255,100,120,0.25) !important;
-    border-radius: 10px !important;
+    background:rgba(255,100,120,0.06) !important;
+    color:#f0d0d5 !important;
+    border:1px solid rgba(255,100,120,0.2) !important;
+    border-radius:12px !important;
+    font-size:1rem !important;
 }
 [data-testid="stTextInput"] input:focus,
-[data-testid="stNumberInput"] input:focus {
-    border-color: #e05070 !important;
-    box-shadow: 0 0 0 2px rgba(224,80,112,0.2) !important;
+[data-testid="stNumberInput"] input:focus{
+    border-color:#e05070 !important;
+    box-shadow:0 0 0 3px rgba(224,80,112,0.15) !important;
 }
-
-/* labels */
-label, [data-testid="stWidgetLabel"] { color: #d0a0a8 !important; }
 
 /* radio */
-[data-testid="stRadio"] label { color: #d0a0a8 !important; }
+[data-testid="stRadio"] label{color:#d0a0a8 !important}
+[data-testid="stRadio"] > div{gap:.4rem !important}
 
 /* metrics */
-[data-testid="stMetricLabel"] { color: #c08090 !important; }
-[data-testid="stMetricValue"] { color: #ff8fa3 !important; }
+[data-testid="stMetricLabel"]{color:#c08090 !important}
+[data-testid="stMetricValue"]{color:#ff8fa3 !important; font-weight:800 !important}
 
 /* divider */
-hr { border-color: rgba(255,100,120,0.15) !important; }
+hr{border-color:rgba(255,100,120,0.12) !important; margin:1.2rem 0 !important}
 
 /* tabs */
-button[data-baseweb="tab"] { color: #906070 !important; background: transparent !important; }
-button[data-baseweb="tab"][aria-selected="true"] {
-    color: #ff8fa3 !important;
-    border-bottom: 2px solid #e05070 !important;
-}
-[data-testid="stTabs"] [role="tablist"] {
-    border-bottom: 1px solid rgba(255,100,120,0.2) !important;
-}
+button[data-baseweb="tab"]{color:#805060 !important; font-weight:600 !important; background:transparent !important}
+button[data-baseweb="tab"][aria-selected="true"]{color:#ff8fa3 !important; border-bottom:3px solid #e05070 !important}
+[data-testid="stTabs"] [role="tablist"]{border-bottom:1px solid rgba(255,100,120,0.15) !important; gap:.5rem !important}
 
 /* expander */
-details {
-    background: rgba(255,80,100,0.05) !important;
-    border: 1px solid rgba(255,100,120,0.15) !important;
-    border-radius: 12px !important;
-}
-details summary { color: #c08090 !important; }
-details summary:hover { color: #ff8fa3 !important; }
-
-/* caption */
-[data-testid="stCaptionContainer"] p { color: #906070 !important; }
-
-/* primary button */
-[data-testid="stButton"] button[kind="primary"] {
-    background: linear-gradient(135deg, #8b1a2a 0%, #c0392b 50%, #e05070 100%) !important;
-    border: none !important;
-    color: #fff !important;
-    font-weight: 700 !important;
-    border-radius: 12px !important;
-    letter-spacing: .4px;
-}
-[data-testid="stButton"] button[kind="primary"]:hover {
-    background: linear-gradient(135deg, #a02030 0%, #d04040 100%) !important;
-}
-
-/* secondary button */
-[data-testid="stButton"] button[kind="secondary"] {
-    background: rgba(255,80,100,0.08) !important;
-    border: 1px solid rgba(255,100,120,0.3) !important;
-    color: #d0a0a8 !important;
-    border-radius: 12px !important;
-}
+details{background:rgba(255,80,100,0.04) !important; border:1px solid rgba(255,100,120,0.12) !important; border-radius:14px !important}
+details summary{color:#b07080 !important; font-weight:600 !important}
 
 /* alerts */
-[data-testid="stAlert"] {
-    background: rgba(255,80,100,0.08) !important;
-    border: 1px solid rgba(255,100,120,0.2) !important;
-    border-radius: 12px !important;
-}
+[data-testid="stAlert"]{border-radius:14px !important; border:1px solid rgba(255,100,120,0.2) !important}
 
-/* markdown tables */
-table { color: #d0a0a8 !important; }
-th { color: #ff8fa3 !important; border-bottom: 1px solid rgba(255,100,120,0.3) !important; }
-td { border-bottom: 1px solid rgba(255,100,120,0.1) !important; }
+/* primary button */
+button[kind="primary"]{
+    background:linear-gradient(135deg,#8b1a2a 0%,#c0392b 55%,#e05070 100%) !important;
+    border:none !important; color:#fff !important; font-weight:700 !important;
+    border-radius:12px !important; letter-spacing:.3px !important;
+    box-shadow:0 4px 15px rgba(192,57,43,0.35) !important;
+    transition:all .2s !important;
+}
+button[kind="primary"]:hover{transform:translateY(-1px) !important; box-shadow:0 6px 20px rgba(192,57,43,0.5) !important}
 
-/* code */
-code { background: rgba(255,80,100,0.12) !important; color: #ffb0c0 !important; border-radius: 4px !important; }
+/* secondary button */
+button[kind="secondary"]{
+    background:rgba(255,80,100,0.07) !important;
+    border:1px solid rgba(255,100,120,0.25) !important;
+    color:#d0a0a8 !important; border-radius:12px !important;
+}
+button[kind="secondary"]:hover{background:rgba(255,80,100,0.14) !important}
 
-/* ── ORDER CARD ── */
-.ocard {
-    background: linear-gradient(135deg, rgba(139,26,42,0.35) 0%, rgba(30,5,10,0.95) 100%);
-    border-radius: 18px;
-    padding: 1.5rem 1.8rem 1.2rem 1.8rem;
-    border: 1px solid rgba(224,80,112,0.3);
-    border-left: 5px solid #e05070;
-    box-shadow: 0 6px 32px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,150,170,0.08);
-    margin-bottom: .5rem;
+/* ── custom components ── */
+.hero{
+    text-align:center;
+    padding:2rem 1rem 1.5rem 1rem;
+    background:linear-gradient(135deg,rgba(139,26,42,0.3),rgba(30,5,10,0.8));
+    border-radius:24px; margin-bottom:1.5rem;
+    border:1px solid rgba(255,100,120,0.15);
 }
-.ocard.delivered {
-    background: linear-gradient(135deg, rgba(20,80,40,0.35) 0%, rgba(5,20,10,0.95) 100%);
-    border-color: rgba(46,204,113,0.3);
-    border-left-color: #27ae60;
-}
-.ocard h3 {
-    margin: 0 0 .15rem 0;
-    font-size: 1.35rem;
-    color: #ff8fa3;
-    font-weight: 700;
-}
-.ocard.delivered h3 { color: #2ecc71; }
-.ocard .ts { font-size: .82rem; color: #704050; margin-bottom: .9rem; }
-.ocard .row { font-size: 1rem; margin: .4rem 0; color: #d0a0a8; }
-.ocard .row b { color: #f0d0d5; }
-.ocard .tot {
-    font-size: 1.35rem; font-weight: 800;
-    color: #ff8fa3; margin-top: .9rem;
-}
-.ocard.delivered .tot { color: #2ecc71; }
-.badge-delivered {
-    display: inline-block;
-    background: linear-gradient(135deg, #145028, #27ae60);
-    color: #fff; font-size: .75rem; font-weight: 700;
-    letter-spacing: 1.5px; text-transform: uppercase;
-    padding: .2rem .7rem; border-radius: 20px; margin-bottom: .6rem;
-}
+.hero h1{font-size:2.2rem !important; margin:0 !important}
+.hero p{color:#9a6070; font-size:.95rem; margin-top:.4rem}
 
-/* ── STATUS CARD (admin empty/draft) ── */
-.scard {
-    border-radius: 14px;
-    padding: 1rem 1.5rem;
-    margin-bottom: .6rem;
-    border-left: 5px solid #555;
-    background: rgba(255,255,255,0.02);
-    border: 1px solid rgba(255,255,255,0.05);
-    border-left: 5px solid #3a2030;
+.ocard{
+    background:linear-gradient(135deg,rgba(139,26,42,0.28) 0%,rgba(20,5,8,0.95) 100%);
+    border-radius:20px; padding:1.5rem 1.8rem;
+    border:1px solid rgba(224,80,112,0.22);
+    border-left:5px solid #e05070;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,150,170,0.06);
+    margin-bottom:.6rem;
 }
-.scard.draft {
-    background: rgba(243,156,18,0.07);
-    border-color: rgba(243,156,18,0.15);
-    border-left-color: #f39c12;
+.ocard.delivered{
+    background:linear-gradient(135deg,rgba(20,80,40,0.28),rgba(5,15,8,0.95));
+    border-color:rgba(46,204,113,0.25); border-left-color:#27ae60;
 }
-.scard h4 { margin: 0; font-size: 1.1rem; color: #d0a0a8; }
-.scard .st { font-size: .85rem; color: #705060; margin-top: .15rem; }
+.ocard h3{margin:0 0 .2rem; font-size:1.3rem; color:#ff8fa3; font-weight:800}
+.ocard.delivered h3{color:#2ecc71}
+.ocard .ts{font-size:.8rem; color:#603040; margin-bottom:.8rem}
+.ocard .row{font-size:.95rem; margin:.35rem 0; color:#c0a0a8}
+.ocard .row b{color:#f0d0d5}
+.ocard .tot{font-size:1.35rem; font-weight:800; color:#ff8fa3; margin-top:.9rem}
+.ocard.delivered .tot{color:#2ecc71}
+.badge-ok{display:inline-block;background:linear-gradient(135deg,#145028,#27ae60);
+          color:#fff;font-size:.72rem;font-weight:700;letter-spacing:1.2px;
+          text-transform:uppercase;padding:.2rem .7rem;border-radius:20px;margin-bottom:.5rem}
 
-/* ── SUMMARY BOX ── */
-.sumbox {
-    background: linear-gradient(135deg, rgba(139,26,42,0.3), rgba(10,2,5,0.97));
-    border-radius: 18px;
-    padding: 1.5rem 2rem;
-    margin-top: 1.4rem;
-    border: 1px solid rgba(224,80,112,0.35);
-    box-shadow: 0 4px 28px rgba(139,26,42,0.3);
+.scard{border-radius:14px;padding:.9rem 1.4rem;margin-bottom:.6rem;
+       background:rgba(255,255,255,0.02);border:1px solid rgba(255,255,255,0.04);
+       border-left:4px solid #2e1020}
+.scard.draft{background:rgba(243,156,18,0.06);border-color:rgba(243,156,18,0.15);border-left-color:#f39c12}
+.scard h4{margin:0;font-size:1.05rem;color:#c09090}
+.scard .st{font-size:.82rem;color:#6a3040;margin-top:.15rem}
+
+.sumbox{
+    background:linear-gradient(135deg,rgba(139,26,42,0.25),rgba(10,2,5,0.97));
+    border-radius:20px; padding:1.5rem 2rem; margin-top:1.2rem;
+    border:1px solid rgba(224,80,112,0.3);
+    box-shadow:0 4px 28px rgba(139,26,42,0.25);
 }
-.sumbox h3 { margin: 0 0 .7rem 0; color: #ff8fa3; font-size: 1.3rem; }
-.sumbox .srow { font-size: 1.05rem; color: #d0a0a8; margin: .3rem 0; }
-.sumbox .srow b { color: #f0d0d5; }
-.sumbox .stot {
-    font-size: 2rem; font-weight: 800; margin-top: .8rem;
-    background: linear-gradient(90deg, #ff8fa3, #e05070);
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+.sumbox h3{margin:0 0 .7rem; color:#ff8fa3; font-size:1.25rem}
+.sumbox .row{font-size:1rem;color:#c0a0a8;margin:.3rem 0}
+.sumbox .row b{color:#f0d0d5}
+.sumbox .big{font-size:1.9rem;font-weight:800;margin-top:.6rem;
+             background:linear-gradient(90deg,#ff8fa3,#e05070);
+             -webkit-background-clip:text;-webkit-text-fill-color:transparent}
+
+/* product toggle grid */
+.ptog-grid{display:grid;grid-template-columns:1fr 1fr;gap:.75rem;margin-top:.5rem}
+.ptog{
+    display:flex;align-items:center;gap:.8rem;
+    background:rgba(255,100,120,0.05);
+    border:1.5px solid rgba(255,100,120,0.15);
+    border-radius:14px;padding:.85rem 1.1rem;cursor:pointer;
+    transition:all .2s;
 }
+.ptog:hover{background:rgba(255,100,120,0.1);border-color:rgba(255,100,120,0.3)}
+.ptog.on{background:rgba(139,26,42,0.35);border-color:rgba(224,80,112,0.5)}
+.ptog .ico{font-size:1.5rem}
+.ptog .name{font-size:.95rem;color:#c0a0a8;font-weight:600}
+.ptog.on .name{color:#ff8fa3}
+.ptog .dot{width:10px;height:10px;border-radius:50%;background:#3a1020;
+           margin-left:auto;transition:all .2s;flex-shrink:0}
+.ptog.on .dot{background:#e05070;box-shadow:0 0 6px rgba(224,80,112,0.6)}
 </style>
 """, unsafe_allow_html=True)
 
-# ── SESSION ───────────────────────────────────────────────────────────────────
-if "user" not in st.session_state:
-    st.session_state.user = None
+# ── session ───────────────────────────────────────────────────────────────────
+if "user"           not in st.session_state: st.session_state.user = None
+if "confirm_del"    not in st.session_state: st.session_state.confirm_del = None
 
-# ── HELPERS ───────────────────────────────────────────────────────────────────
 def logout():
-    st.session_state.user = None
+    st.session_state.user        = None
+    st.session_state.confirm_del = None
     st.query_params.clear()
     st.rerun()
 
 def get_base_url():
-    try:
-        return st.context.url.split("?")[0].rstrip("/")
-    except Exception:
-        return "http://localhost:8501"
+    try:    return st.context.url.split("?")[0].rstrip("/")
+    except: return "http://localhost:8501"
 
 def make_qr_bytes(url):
     qr = qrcode.QRCode(version=1, error_correction=qrcode.constants.ERROR_CORRECT_H,
@@ -224,77 +193,62 @@ def make_qr_bytes(url):
     return buf.getvalue()
 
 def order_has_items(o):
-    return any(o["lines"][p]["quantity"] > 0 for p in PRODUCTS)
+    return any(o["lines"].get(p, {}).get("quantity", 0) > 0 for p in ALL_PRODUCTS)
 
-def validate_time(raw):
-    """Returns (time_str, error_str). One of them is None."""
-    raw = raw.strip()
-    if not re.fullmatch(r"\d{1,2}:\d{2}", raw):
-        return None, "Use HH:MM format, e.g. 09:15"
-    h, m = map(int, raw.split(":"))
-    if not (DELIVERY_START <= h <= DELIVERY_END and 0 <= m <= 59):
-        return None, f"Must be between {DELIVERY_START:02d}:00 and {DELIVERY_END:02d}:00"
-    if h == DELIVERY_END and m > 0:
-        return None, f"Latest delivery is {DELIVERY_END:02d}:00"
-    return f"{h:02d}:{m:02d}", None
-
+# ── QR token auto-login ───────────────────────────────────────────────────────
 preselect_apt = st.query_params.get("apt", "").upper()
 qr_token      = st.query_params.get("token", "")
-
-# Auto-login via QR token — no password needed
 if st.session_state.user is None and qr_token:
     token_user = verify_token(qr_token)
     if token_user:
         st.session_state.user = token_user
         st.query_params.clear()
 
-
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  SHARED ORDER CARD                                           ║
-# ╚══════════════════════════════════════════════════════════════╝
+# ── shared card renderer ──────────────────────────────────────────────────────
 def render_order_card(o, show_ts=True):
-    qty   = o["lines"]["strawberries"]["quantity"]
+    qty   = sum(o["lines"].get(p, {}).get("quantity", 0) for p in ALL_PRODUCTS)
     total = o["total_nok"]
-    t     = o["delivery_time"] or "—"
-    pay   = o["payment_method"] or "—"
-
+    t     = o.get("delivery_time") or "—"
+    pay   = o.get("payment_method") or "—"
     css   = "ocard delivered" if o.get("delivered") else "ocard"
-    ts    = ""
-    if show_ts and o.get("submitted_at"):
-        ts = f'<p class="ts">Submitted: {o["submitted_at"]}</p>'
-    badge = '<span class="badge-delivered">&#10003; Delivered</span>' if o.get("delivered") else ""
-    del_ts = f'<p class="ts">Delivered: {o["delivered_at"]}</p>' if o.get("delivered_at") else ""
+    ts    = f'<p class="ts">Submitted: {o["submitted_at"]}</p>' if show_ts and o.get("submitted_at") else ""
+    badge = '<span class="badge-ok">&#10003; Delivered</span>' if o.get("delivered") else ""
+    del_t = f'<p class="ts" style="color:#2ecc71">Delivered: {o["delivered_at"]}</p>' if o.get("delivered_at") else ""
+
+    lines_html = ""
+    for pid, info in ALL_PRODUCTS.items():
+        q = o["lines"].get(pid, {}).get("quantity", 0)
+        if q > 0:
+            lines_html += f'<p class="row">{info["emoji"]} {info["label"]} &times; <b>{q}</b> = <b>{q*info["price"]} NOK</b></p>'
 
     st.markdown(f"""
 <div class="{css}">
   <h3>&#127968; Apartment {o['apt_name']}</h3>
-  {ts}{badge}{del_ts}
-  <p class="row">&#127827; Strawberries 400g &nbsp;&times;&nbsp; <b>{qty}</b></p>
-  <p class="row">&#128336; Delivery: <b>{t}</b></p>
-  <p class="row">&#128179; Payment: <b>{pay}</b></p>
+  {ts}{badge}{del_t}
+  {lines_html}
+  <p class="row">&#128336; <b>{t}</b> &nbsp;|&nbsp; &#128179; <b>{pay}</b></p>
   <p class="tot">Total: {total:.0f} NOK</p>
-</div>
-""", unsafe_allow_html=True)
+</div>""", unsafe_allow_html=True)
 
-
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  LOGIN                                                       ║
-# ╚══════════════════════════════════════════════════════════════╝
+# ╔══════════════════════════════════════════════════════╗
+# ║  LOGIN                                               ║
+# ╚══════════════════════════════════════════════════════╝
 def show_login():
-    st.markdown("# &#127827; Strawberry Orders")
-    st.caption("Sign in to place or view orders")
-    st.write("")
+    st.markdown("""
+<div class="hero">
+  <h1>&#127827; Strawberry Orders</h1>
+  <p>Fresh delivery for your apartment</p>
+</div>""", unsafe_allow_html=True)
 
     apt_usernames = list(APARTMENTS.values())
     if preselect_apt in apt_usernames:
-        st.info(f"&#127968; Apartment **{preselect_apt}** — enter your PIN below")
+        st.info(f"&#127968; Apartment **{preselect_apt}** — enter your PIN")
 
     with st.form("login_form"):
         default  = preselect_apt if preselect_apt in apt_usernames else ""
-        username = st.text_input("Username", value=default,
-                                  placeholder="A1  B2  C3  D4  admin")
+        username = st.text_input("Username", value=default, placeholder="A1  B2  C3  D4  admin")
         password = st.text_input("PIN / Password", type="password")
-        ok = st.form_submit_button("Sign in", use_container_width=True)
+        ok       = st.form_submit_button("Sign in &#10132;", use_container_width=True)
 
     if ok:
         user = verify_user(username.strip(), password.strip())
@@ -310,7 +264,7 @@ def show_login():
 | Username | Password | Role |
 |---|---|---|
 | `superadmin` | `superadmin123` | Full control |
-| `admin` | `admin123` | View orders |
+| `admin` | `admin123` | Orders + stock |
 | `A1` | `1111` | Apartment A1 |
 | `B2` | `2222` | Apartment B2 |
 | `C3` | `3333` | Apartment C3 |
@@ -318,253 +272,251 @@ def show_login():
 """)
 
 
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  TENANT                                                      ║
-# ╚══════════════════════════════════════════════════════════════╝
+# ╔══════════════════════════════════════════════════════╗
+# ║  TENANT                                              ║
+# ╚══════════════════════════════════════════════════════╝
 def show_tenant(user):
     apt_id   = user["apt_id"]
     apt_name = APARTMENTS[apt_id]
     order    = get_full_order(apt_id)
 
     c1, c2 = st.columns([5, 1])
-    with c1:
-        st.markdown(f"# &#127968; Apartment {apt_name}")
+    with c1: st.markdown(f"# &#127968; Apartment {apt_name}")
     with c2:
         st.write("")
-        if st.button("Log out", key="t_logout"):
-            logout()
+        if st.button("Log out", key="t_out"): logout()
 
-    # Already submitted
-    if order["submitted"]:
-        # If already delivered → let them place a new order right away
-        if order.get("delivered"):
-            st.success(f"Your previous order was delivered at **{order.get('delivered_at', '')}**. You can place a new one below.")
-            reset_apt_order(apt_id)
-            st.rerun()
-
+    if order["submitted"] and not order.get("delivered"):
         st.success("Your order has been submitted!")
         render_order_card(order)
-        st.write("")
         if st.button("Edit my order", type="secondary", use_container_width=True):
-            reset_apt_order(apt_id)
-            st.rerun()
+            reset_apt_order(apt_id); st.rerun()
         return
 
+    if order.get("delivered"):
+        st.success(f"Delivered at **{order['delivered_at']}**. Place a new order below!")
+        reset_apt_order(apt_id); st.rerun()
+
     st.divider()
 
-    # Quantity
-    st.markdown("### &#127827; Strawberries 400g — 60 NOK each")
-    c_qty, c_price = st.columns([1, 2])
-    with c_qty:
-        qty = st.number_input("Baskets", min_value=0, max_value=50,
-                              value=order["lines"]["strawberries"]["quantity"],
-                              step=1, label_visibility="collapsed")
-    with c_price:
-        if qty > 0:
-            st.markdown(
-                f"<p style='padding-top:.5rem;font-size:1.1rem;color:#d0a0a8'>"
-                f"<b style='color:#f0d0d5'>{qty}</b> &times; 60 = "
-                f"<b style='color:#ff8fa3;font-size:1.2rem'>{qty*60} NOK</b></p>",
-                unsafe_allow_html=True
+    available = get_available_products()
+    if not available:
+        st.warning("No products are available today. Check back later!")
+        return
+
+    st.markdown("### &#127827; Select products")
+    quantities = {}
+    cols = st.columns(len(available) if len(available) <= 4 else 2)
+    for idx, pid in enumerate(available):
+        info = ALL_PRODUCTS[pid]
+        with cols[idx % len(cols)]:
+            current = order["lines"].get(pid, {}).get("quantity", 0)
+            qty = st.number_input(
+                f"{info['emoji']} {info['label']}\n\n*{info['price']} NOK*",
+                min_value=0, max_value=50, value=current, step=1, key=f"q_{pid}"
             )
+            quantities[pid] = qty
 
     st.divider()
-
-    # Delivery time — slot picker
     st.markdown("### &#128336; Delivery time")
-    saved_time    = order["delivery_time"] or TIME_SLOTS[0]
+    saved_time    = order.get("delivery_time") or TIME_SLOTS[0]
     slot_idx      = TIME_SLOTS.index(saved_time) if saved_time in TIME_SLOTS else 0
-    delivery_time = st.radio(
-        "Delivery slot", options=TIME_SLOTS, index=slot_idx,
-        label_visibility="collapsed"
-    )
-    time_err = None
+    delivery_time = st.radio("Slot", TIME_SLOTS, index=slot_idx, label_visibility="collapsed")
 
     st.divider()
-
-    # Payment
     st.markdown("### &#128179; Payment method")
-    saved_pay = order["payment_method"] or PAYMENT_METHODS[0]
+    saved_pay = order.get("payment_method") or PAYMENT_METHODS[0]
     pay_idx   = PAYMENT_METHODS.index(saved_pay) if saved_pay in PAYMENT_METHODS else 0
     payment   = st.radio("Pay", PAYMENT_METHODS, index=pay_idx,
                          horizontal=True, label_visibility="collapsed")
 
     st.divider()
+    total = sum(quantities.get(p, 0) * ALL_PRODUCTS[p]["price"] for p in available)
 
-    # Total + actions
     c_tot, c_save, c_sub = st.columns([2, 1, 1])
-    with c_tot:
-        st.metric("Total", f"{qty * 60} NOK")
+    with c_tot: st.metric("Total", f"{total} NOK")
     with c_save:
         if st.button("Save draft", use_container_width=True):
-            if time_err:
-                st.warning("Fix the time first.")
-            else:
-                save_order(apt_id, {"strawberries": qty}, delivery_time, payment)
-                st.success("Saved!")
-                st.rerun()
+            save_order(apt_id, quantities, delivery_time, payment)
+            st.success("Saved!"); st.rerun()
     with c_sub:
         if st.button("Submit order", type="primary", use_container_width=True):
-            if qty == 0:
-                st.warning("Add at least 1 basket.")
-            elif time_err:
-                st.warning("Fix the time first.")
+            if total == 0: st.warning("Add at least one item.")
             else:
-                save_order(apt_id, {"strawberries": qty}, delivery_time, payment)
+                save_order(apt_id, quantities, delivery_time, payment)
                 submit_order(apt_id)
-                st.success("Order submitted!")
-                st.rerun()
+                st.success("Order submitted!"); st.rerun()
 
-
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  ADMIN  (read-only + mark delivered)                         ║
-# ╚══════════════════════════════════════════════════════════════╝
+# ╔══════════════════════════════════════════════════════╗
+# ║  ADMIN  (orders + product stock toggles)             ║
+# ╚══════════════════════════════════════════════════════╝
 def show_admin(user):
     c1, c2 = st.columns([5, 1])
-    with c1:
-        st.markdown("# &#127827; Today's Orders")
+    with c1: st.markdown("# &#127827; Today's Orders")
     with c2:
         st.write("")
-        if st.button("Log out", key="a_logout"):
-            logout()
+        if st.button("Log out", key="a_out"): logout()
+
+    tab_active, tab_delivered, tab_stock = st.tabs(["🚛 To deliver", "✅ Delivered", "🛒 Stock"])
 
     orders    = get_all_full_orders()
     submitted = [o for o in orders if o["submitted"]]
-    delivered = [o for o in submitted if o.get("delivered")]
     active    = [o for o in submitted if not o.get("delivered")]
+    delivered = [o for o in submitted if o.get("delivered")]
     drafts    = [o for o in orders if not o["submitted"] and order_has_items(o)]
-    empty     = [o for o in orders if not o["submitted"] and not order_has_items(o)]
 
-    # tab badge counts
-    active_label    = f"&#128666; To deliver ({len(active)})" if active else "&#128666; To deliver"
-    delivered_label = f"&#9989; Delivered ({len(delivered)})" if delivered else "&#9989; Delivered"
-
-    tab_active, tab_delivered = st.tabs([active_label, delivered_label])
-
-    # ── TAB 1: active (submitted, not yet delivered) ───────────────────────
+    # ── To deliver ────────────────────────────────────────────────────────
     with tab_active:
-        if active:
+        if not active and not drafts:
+            st.markdown('<div class="scard"><h4 style="text-align:center;color:#6a3040;padding:.4rem 0">No orders yet</h4></div>', unsafe_allow_html=True)
+        else:
             for o in active:
                 render_order_card(o)
-                if st.button(f"Mark as delivered — {o['apt_name']}",
-                             key=f"dlv_{o['apt_id']}", type="primary",
-                             use_container_width=True):
-                    mark_delivered(o["apt_id"])
-                    st.rerun()
+                # Confirm-before-deliver
+                if st.session_state.confirm_del == o["apt_id"]:
+                    st.warning(f"Are you sure you want to mark **{o['apt_name']}** as delivered?")
+                    cc1, cc2 = st.columns(2)
+                    with cc1:
+                        if st.button("Yes, delivered", type="primary", key=f"yes_{o['apt_id']}"):
+                            mark_delivered(o["apt_id"])
+                            st.session_state.confirm_del = None
+                            st.rerun()
+                    with cc2:
+                        if st.button("Cancel", key=f"no_{o['apt_id']}"):
+                            st.session_state.confirm_del = None
+                            st.rerun()
+                else:
+                    if st.button(f"🚚 Mark as delivered — {o['apt_name']}",
+                                 key=f"dlv_{o['apt_id']}", type="primary",
+                                 use_container_width=True):
+                        st.session_state.confirm_del = o["apt_id"]
+                        st.rerun()
                 st.write("")
-        else:
-            st.markdown(
-                '<div class="scard"><h4 style="color:#704050;text-align:center;padding:.5rem 0">No orders yet</h4></div>',
-                unsafe_allow_html=True
-            )
 
-        # drafts below active orders
-        for o in drafts:
-            st.markdown(
-                f'<div class="scard draft">'
-                f'<h4>&#128203; Apartment {o["apt_name"]}</h4>'
-                f'<p class="st">Draft — not submitted yet</p></div>',
-                unsafe_allow_html=True
-            )
-        if drafts:
-            st.warning(f"{len(drafts)} apartment(s) saved a draft but haven't submitted.")
+            for o in drafts:
+                st.markdown(f'<div class="scard draft"><h4>&#128203; Apartment {o["apt_name"]}</h4>'
+                            f'<p class="st">Draft — not submitted yet</p></div>', unsafe_allow_html=True)
+            if drafts:
+                st.warning(f"{len(drafts)} apartment(s) have a draft not yet submitted.")
 
-        # summary for active tab
         if active:
-            total_baskets = sum(o["lines"]["strawberries"]["quantity"] for o in active)
-            total_nok     = sum(o["total_nok"] for o in active)
-            total_g       = total_baskets * 400
+            total_nok = sum(o["total_nok"] for o in active)
             st.markdown(f"""
 <div class="sumbox">
-  <h3>&#129534; Still to collect</h3>
-  <p class="srow">&#127827; <b>{total_baskets} baskets</b> &nbsp;&mdash;&nbsp; {total_g} g</p>
-  <p class="stot">{total_nok:.0f} NOK</p>
-  <p style="color:#704050;font-size:.85rem">from {len(active)} apartment(s)</p>
-</div>
-""", unsafe_allow_html=True)
+  <h3>&#128230; Still to collect</h3>
+  <p class="row">&#127968; <b>{len(active)}</b> apartment(s)</p>
+  <p class="big">{total_nok:.0f} NOK</p>
+</div>""", unsafe_allow_html=True)
 
-    # ── TAB 2: delivered ───────────────────────────────────────────────────
+    # ── Delivered ─────────────────────────────────────────────────────────
     with tab_delivered:
-        if delivered:
+        if not delivered:
+            st.markdown('<div class="scard"><h4 style="text-align:center;color:#6a3040;padding:.4rem 0">No deliveries yet</h4></div>', unsafe_allow_html=True)
+        else:
             for o in delivered:
                 render_order_card(o)
+                if st.button(f"↩ Undo delivery — {o['apt_name']}", key=f"undo_{o['apt_id']}"):
+                    undeliver_order(o["apt_id"])
+                    st.rerun()
                 st.write("")
 
-            total_baskets = sum(o["lines"]["strawberries"]["quantity"] for o in delivered)
-            total_nok     = sum(o["total_nok"] for o in delivered)
-            total_g       = total_baskets * 400
+            total_nok = sum(o["total_nok"] for o in delivered)
             st.markdown(f"""
 <div class="sumbox">
   <h3>&#9989; Delivered today</h3>
-  <p class="srow">&#127827; <b>{total_baskets} baskets</b> &nbsp;&mdash;&nbsp; {total_g} g</p>
-  <p class="stot">{total_nok:.0f} NOK</p>
-  <p style="color:#704050;font-size:.85rem">from {len(delivered)} apartment(s)</p>
-</div>
-""", unsafe_allow_html=True)
-        else:
-            st.markdown(
-                '<div class="scard"><h4 style="color:#704050;text-align:center;padding:.5rem 0">No deliveries yet</h4></div>',
-                unsafe_allow_html=True
+  <p class="row">&#127968; <b>{len(delivered)}</b> apartment(s)</p>
+  <p class="big">{total_nok:.0f} NOK</p>
+</div>""", unsafe_allow_html=True)
+
+    # ── Stock ─────────────────────────────────────────────────────────────
+    with tab_stock:
+        st.markdown("### What's available today?")
+        st.caption("Toggle on the products you have in stock. Tenants will only see enabled items.")
+        available = get_available_products()
+        render_product_toggles(available, prefix="adm")
+
+
+def render_product_toggles(available: list, prefix: str):
+    """Render styled product toggle grid using Streamlit checkboxes."""
+    st.markdown('<div class="ptog-grid">', unsafe_allow_html=True)
+    cols = st.columns(2)
+    for idx, (pid, info) in enumerate(ALL_PRODUCTS.items()):
+        on = pid in available
+        with cols[idx % 2]:
+            new_val = st.checkbox(
+                f"{info['emoji']}  {info['label']}",
+                value=on,
+                key=f"{prefix}_tog_{pid}"
             )
+            if new_val != on:
+                set_product_available(pid, new_val)
+                st.rerun()
+    st.markdown('</div>', unsafe_allow_html=True)
 
-
-# ╔══════════════════════════════════════════════════════════════╗
-# ║  SUPERADMIN                                                  ║
-# ╚══════════════════════════════════════════════════════════════╝
+# ╔══════════════════════════════════════════════════════╗
+# ║  SUPERADMIN                                          ║
+# ╚══════════════════════════════════════════════════════╝
 def show_superadmin(user):
     c1, c2 = st.columns([5, 1])
-    with c1:
-        st.markdown("# &#9881;&#65039; Super Admin")
+    with c1: st.markdown("# &#9881;&#65039; Super Admin")
     with c2:
         st.write("")
-        if st.button("Log out", key="sa_logout"):
-            logout()
+        if st.button("Log out", key="sa_out"): logout()
 
-    tab_orders, tab_qr, tab_pwd = st.tabs(["Orders", "QR Codes", "Passwords"])
+    tab_orders, tab_stock, tab_qr, tab_pwd = st.tabs(["📋 Orders", "🛒 Stock", "📱 QR Codes", "🔑 Passwords"])
 
     with tab_orders:
         orders    = get_all_full_orders()
         submitted = [o for o in orders if o["submitted"]]
+        active    = [o for o in submitted if not o.get("delivered")]
+        delivered = [o for o in submitted if o.get("delivered")]
         drafts    = [o for o in orders if not o["submitted"] and order_has_items(o)]
 
-        if submitted:
-            st.subheader("Submitted")
-            for o in submitted:
+        if active:
+            st.subheader("To deliver")
+            for o in active:
                 render_order_card(o)
-                if st.button(f"Reset {o['apt_name']}", key=f"rs_{o['apt_id']}"):
-                    reset_apt_order(o["apt_id"])
-                    st.rerun()
+                if st.button(f"Reset {o['apt_name']}", key=f"rsa_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
                 st.write("")
-
+        if delivered:
+            st.subheader("Delivered")
+            for o in delivered:
+                render_order_card(o)
+                c1, c2 = st.columns(2)
+                with c1:
+                    if st.button(f"↩ Undo {o['apt_name']}", key=f"undo_sa_{o['apt_id']}"): undeliver_order(o["apt_id"]); st.rerun()
+                with c2:
+                    if st.button(f"Reset {o['apt_name']}", key=f"rsd_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
+                st.write("")
         if drafts:
             st.subheader("Drafts")
             for o in drafts:
                 render_order_card(o, show_ts=False)
-                if st.button(f"Reset {o['apt_name']}", key=f"rd_{o['apt_id']}"):
-                    reset_apt_order(o["apt_id"])
-                    st.rerun()
+                if st.button(f"Reset {o['apt_name']}", key=f"rdr_{o['apt_id']}"): reset_apt_order(o["apt_id"]); st.rerun()
                 st.write("")
-
         if not submitted and not drafts:
             st.info("No orders yet.")
 
         if submitted:
-            total_b = sum(o["lines"]["strawberries"]["quantity"] for o in submitted)
             total_n = sum(o["total_nok"] for o in submitted)
             st.divider()
-            col1, col2 = st.columns(2)
-            col1.metric("Total baskets", total_b)
-            col2.metric("Total NOK", f"{total_n:.0f}")
+            c1, c2 = st.columns(2)
+            c1.metric("Orders", len(submitted))
+            c2.metric("Total NOK", f"{total_n:.0f}")
 
         st.divider()
-        if st.button("Reset ALL orders", type="secondary", use_container_width=True):
-            reset_all_orders()
-            st.success("All orders reset.")
-            st.rerun()
+        if st.button("🔄 Reset ALL orders", type="secondary", use_container_width=True):
+            reset_all_orders(); st.success("All reset."); st.rerun()
+
+    with tab_stock:
+        st.markdown("### What's available today?")
+        st.caption("Toggle on the products in stock. Shared with admin.")
+        available = get_available_products()
+        render_product_toggles(available, prefix="sa")
 
     with tab_qr:
         st.subheader("QR Codes")
-        st.caption("Scan → logged in automatically. No password needed. Print and stick on each door.")
+        st.caption("Scan → auto-login. No password needed. Print and stick on each door.")
         base_url = get_base_url()
         cols = st.columns(4)
         for apt_id, apt_name in APARTMENTS.items():
@@ -573,13 +525,12 @@ def show_superadmin(user):
             qr_bytes = make_qr_bytes(url)
             with cols[apt_id - 1]:
                 st.image(qr_bytes, caption=f"Apt {apt_name}", use_container_width=True)
-                st.download_button(f"Download {apt_name}", data=qr_bytes,
+                st.download_button(f"⬇ {apt_name}", data=qr_bytes,
                                    file_name=f"qr_{apt_name}.png", mime="image/png",
                                    key=f"dl_{apt_id}", use_container_width=True)
         with st.expander("Direct links"):
             for apt_id, apt_name in APARTMENTS.items():
-                token = get_token_for_apt(apt_id)
-                st.code(f"{base_url}/?token={token}")
+                st.code(f"{base_url}/?token={get_token_for_apt(apt_id)}")
 
     with tab_pwd:
         st.subheader("Change Passwords")
@@ -589,30 +540,19 @@ def show_superadmin(user):
             new_pwds = {}
             cols = st.columns(2)
             for i, u in enumerate(users):
-                label = {"superadmin": "Superadmin", "admin": "Admin (viewer)"}.get(
-                    u["role"], f"Apartment {u['username']}"
-                )
+                label = {"superadmin": "Superadmin", "admin": "Admin"}.get(u["role"], f"Apartment {u['username']}")
                 with cols[i % 2]:
-                    new_pwds[u["username"]] = st.text_input(
-                        label, type="password", placeholder="New password",
-                        key=f"npwd_{u['username']}"
-                    )
+                    new_pwds[u["username"]] = st.text_input(label, type="password",
+                                                             placeholder="New password",
+                                                             key=f"np_{u['username']}")
             if st.form_submit_button("Save passwords", use_container_width=True):
-                changed = sum(1 for u, p in new_pwds.items()
-                              if p.strip() and not change_password(u, p.strip()))
-                if changed:
-                    st.success(f"Updated {changed} password(s).")
-                else:
-                    st.warning("Nothing changed — all fields blank.")
+                changed = sum(1 for u, p in new_pwds.items() if p.strip() and not change_password(u, p.strip()))
+                st.success(f"Updated {changed} password(s).") if changed else st.warning("Nothing changed.")
 
 
-# ── ROUTER ────────────────────────────────────────────────────────────────────
+# ── router ────────────────────────────────────────────────────────────────────
 u = st.session_state.user
-if u is None:
-    show_login()
-elif u["role"] == "superadmin":
-    show_superadmin(u)
-elif u["role"] == "admin":
-    show_admin(u)
-else:
-    show_tenant(u)
+if u is None:           show_login()
+elif u["role"] == "superadmin": show_superadmin(u)
+elif u["role"] == "admin":      show_admin(u)
+else:                           show_tenant(u)
