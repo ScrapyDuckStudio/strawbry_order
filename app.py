@@ -6,8 +6,8 @@ from database import (
     init_db, verify_user, get_all_users, change_password,
     get_full_order, get_all_full_orders,
     save_order, submit_order, reset_all_orders, reset_apt_order,
-    mark_delivered,
-    PRODUCTS, APARTMENTS, PAYMENT_METHODS,
+    mark_delivered, get_token_for_apt, verify_token,
+    PRODUCTS, APARTMENTS, PAYMENT_METHODS, TIME_SLOTS,
     DELIVERY_START, DELIVERY_END,
 )
 
@@ -239,6 +239,14 @@ def validate_time(raw):
     return f"{h:02d}:{m:02d}", None
 
 preselect_apt = st.query_params.get("apt", "").upper()
+qr_token      = st.query_params.get("token", "")
+
+# Auto-login via QR token — no password needed
+if st.session_state.user is None and qr_token:
+    token_user = verify_token(qr_token)
+    if token_user:
+        st.session_state.user = token_user
+        st.query_params.clear()
 
 
 # ╔══════════════════════════════════════════════════════════════╗
@@ -362,15 +370,15 @@ def show_tenant(user):
 
     st.divider()
 
-    # Delivery time
+    # Delivery time — slot picker
     st.markdown("### &#128336; Delivery time")
-    st.caption(f"Between {DELIVERY_START:02d}:00 and {DELIVERY_END:02d}:00  —  format HH:MM")
-    saved_time = order["delivery_time"] or f"{DELIVERY_START:02d}:00"
-    time_raw   = st.text_input("Time", value=saved_time, placeholder="e.g. 10:30",
-                                max_chars=5, label_visibility="collapsed")
-    delivery_time, time_err = validate_time(time_raw)
-    if time_err:
-        st.error(time_err)
+    saved_time    = order["delivery_time"] or TIME_SLOTS[0]
+    slot_idx      = TIME_SLOTS.index(saved_time) if saved_time in TIME_SLOTS else 0
+    delivery_time = st.radio(
+        "Delivery slot", options=TIME_SLOTS, index=slot_idx,
+        label_visibility="collapsed"
+    )
+    time_err = None
 
     st.divider()
 
@@ -556,11 +564,12 @@ def show_superadmin(user):
 
     with tab_qr:
         st.subheader("QR Codes")
-        st.caption("Scan to open the app with username pre-filled. Print and stick on each door.")
+        st.caption("Scan → logged in automatically. No password needed. Print and stick on each door.")
         base_url = get_base_url()
         cols = st.columns(4)
         for apt_id, apt_name in APARTMENTS.items():
-            url      = f"{base_url}/?apt={apt_name}"
+            token    = get_token_for_apt(apt_id)
+            url      = f"{base_url}/?token={token}"
             qr_bytes = make_qr_bytes(url)
             with cols[apt_id - 1]:
                 st.image(qr_bytes, caption=f"Apt {apt_name}", use_container_width=True)
@@ -569,7 +578,8 @@ def show_superadmin(user):
                                    key=f"dl_{apt_id}", use_container_width=True)
         with st.expander("Direct links"):
             for apt_id, apt_name in APARTMENTS.items():
-                st.code(f"{base_url}/?apt={apt_name}")
+                token = get_token_for_apt(apt_id)
+                st.code(f"{base_url}/?token={token}")
 
     with tab_pwd:
         st.subheader("Change Passwords")

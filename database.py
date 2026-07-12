@@ -15,7 +15,18 @@ APARTMENTS = {
     4: "D4",
 }
 
-PAYMENT_METHODS = ["Cash", "Vipps"]
+PAYMENT_METHODS = ["Cash", "Vipps", "Card"]
+
+TIME_SLOTS = [
+    "ASAP",
+    "06:00 – 08:00",
+    "08:00 – 10:00",
+    "10:00 – 12:00",
+    "12:00 – 14:00",
+    "14:00 – 16:00",
+    "16:00 – 18:00",
+    "18:00 – 20:00",
+]
 
 DELIVERY_START = 6
 DELIVERY_END   = 20
@@ -73,6 +84,14 @@ def init_db():
         )
     """)
 
+    # QR auto-login tokens — one permanent token per apartment
+    cur.execute("""
+        CREATE TABLE IF NOT EXISTS qr_tokens (
+            token  TEXT    PRIMARY KEY,
+            apt_id INTEGER NOT NULL UNIQUE
+        )
+    """)
+
     # Migrate: add delivered columns if missing (safe to run on existing DB)
     existing = [row[1] for row in cur.execute("PRAGMA table_info(order_headers)").fetchall()]
     if "delivered" not in existing:
@@ -106,6 +125,14 @@ def init_db():
                 "INSERT OR IGNORE INTO order_lines (header_id, product, quantity, price_each) VALUES (?,?,0,?)",
                 (header_id, product, info["price"])
             )
+
+    # Seed one permanent QR token per apartment
+    import secrets
+    for apt_id in APARTMENTS:
+        cur.execute("SELECT token FROM qr_tokens WHERE apt_id=?", (apt_id,))
+        if not cur.fetchone():
+            token = secrets.token_urlsafe(32)
+            cur.execute("INSERT INTO qr_tokens (token, apt_id) VALUES (?,?)", (token, apt_id))
 
     conn.commit()
     conn.close()
@@ -257,3 +284,36 @@ def mark_delivered(apt_id: int):
     )
     conn.commit()
     conn.close()
+
+
+# ── QR tokens ─────────────────────────────────────────────────────────────────
+
+def get_token_for_apt(apt_id: int) -> str:
+    """Return the permanent QR token for an apartment."""
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("SELECT token FROM qr_tokens WHERE apt_id=?", (apt_id,))
+    row = cur.fetchone()
+    conn.close()
+    return row["token"] if row else None
+
+
+def verify_token(token: str):
+    """Return user-like dict if token is valid, else None."""
+    if not token:
+        return None
+    conn = get_conn()
+    cur  = conn.cursor()
+    cur.execute("SELECT apt_id FROM qr_tokens WHERE token=?", (token,))
+    row = cur.fetchone()
+    conn.close()
+    if not row:
+        return None
+    apt_id = row["apt_id"]
+    # Return a fake user dict matching what verify_user returns
+    conn2 = get_conn()
+    cur2  = conn2.cursor()
+    cur2.execute("SELECT * FROM users WHERE apt_id=? AND role='tenant'", (apt_id,))
+    user = cur2.fetchone()
+    conn2.close()
+    return dict(user) if user else None
