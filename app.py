@@ -142,7 +142,11 @@ def check_and_notify(orders):
     new = current - st.session_state.known_orders
     for apt_id in new:
         o = next(x for x in orders if x["apt_id"] == apt_id)
-        st.components.v1.html(f'<script>if(window.notifyNewOrder){{window.notifyNewOrder("{o["apt_name"]}","{o["total_nok"]:.0f}")}}</script>', height=0)
+        # Notify via local notification + post to PWA parent
+        st.components.v1.html(f'''<script>
+if(window.notifyNewOrder){{window.notifyNewOrder("{o["apt_name"]}","{o["total_nok"]:.0f}")}}
+if(window.parent && window.parent.postMessage){{window.parent.postMessage({{type:"new-order",apt:"{o["apt_name"]}",total:"{o["total_nok"]:.0f}"}},"*")}}
+</script>''', height=0)
     st.session_state.known_orders = current
 
 def get_base_url():
